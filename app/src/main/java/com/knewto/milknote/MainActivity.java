@@ -1,11 +1,14 @@
 package com.knewto.milknote;
 
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.nuance.speechkit.Audio;
 import com.nuance.speechkit.DetectionType;
@@ -46,6 +49,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         transcription = (TextView)findViewById(R.id.transcription1);
+        updateUI();
 
         // Code to run when Transcribe button is clicked
         recordNote = (Button) findViewById(R.id.button1);
@@ -64,6 +68,23 @@ public class MainActivity extends AppCompatActivity {
         Log.v(TAG,"onCreate");
 
     }
+
+    // Storage Methods - Task 1 uses Shared Preference
+    private void setSharedPreference(String string){
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPref.edit();
+        editor.putString(getString(R.string.pref_main_text), string);
+        editor.commit();
+    }
+
+    private void updateUI(){
+        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
+        //Toast.makeText(getApplicationContext(), textString, Toast.LENGTH_SHORT).show();
+        transcription.setText(textString);
+    }
+
+
 
 
     // NUANCE SPEECHKIT METHODS
@@ -149,6 +170,8 @@ public class MainActivity extends AppCompatActivity {
         public void onRecognition(Transaction transaction, Recognition recognition) {
             Log.v(TAG,"onRecognition");
             transcription.append("\nonRecognition: " + recognition.getText());
+            setSharedPreference(recognition.getText());
+            updateUI();
             //We have received a transcription of the users voice from the server.
             setState(State.IDLE);
         }

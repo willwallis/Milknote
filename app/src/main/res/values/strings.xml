@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Milknote</string>
+    <string name="pref_main_text">pref_main_text</string>
 </resources>
