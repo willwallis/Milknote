@@ -10,7 +10,6 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v4.media.TransportStateListener;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -18,32 +17,12 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
-import android.widget.Toast;
-
-import com.nuance.speechkit.Audio;
-import com.nuance.speechkit.DetectionType;
-import com.nuance.speechkit.Language;
-import com.nuance.speechkit.Recognition;
-import com.nuance.speechkit.RecognitionType;
-import com.nuance.speechkit.Session;
-import com.nuance.speechkit.Transaction;
-import com.nuance.speechkit.TransactionException;
 
 public class MainActivity extends AppCompatActivity {
 
     // Nuance functionality variables
     // NOTE - Nuance requires targetting 22, 23 won't work!
-    private Audio startEarcon;
-    private Audio stopEarcon;
-    private Audio errorEarcon;
-
-    private Session speechSession;
-    private Transaction recoTransaction;
     private State state = State.IDLE;
-
-    private RecognitionType recognitionType = RecognitionType.DICTATION;
-    private DetectionType detectionType = DetectionType.Long;
-    private String language = "eng-USA";
 
     // Layout variables
     private TextView transcription;
@@ -64,8 +43,6 @@ public class MainActivity extends AppCompatActivity {
     private final int CANCEL = 300;
 
 
-
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -82,23 +59,17 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Start Speech Transcription Service
+        // Start the Speech Transcription Service
         Intent transcribeServiceIntent = new Intent(this, TranscribeService.class);
         startService(transcribeServiceIntent);
 
+        // Refresh the UI in case transcription occurred from notification/widget
         updateUI();
-
-        //Create a session
-//        speechSession = Session.Factory.session(this, Configuration.SERVER_URI, Configuration.APP_KEY);
-//
-//        loadEarcons();
-//        setState(State.IDLE);
-        Log.v(TAG,"onCreate");
 
         // Create Notification
         createNotification();
 
-        // Create Broadcast receiver for UI updates from Service
+        // Create Broadcast receiver for UI and State updates from Service
         uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(onUIUpdate, uiUpdateFilter);
@@ -107,15 +78,6 @@ public class MainActivity extends AppCompatActivity {
                 .registerReceiver(onStateUpdate, setStateFilter);
 
 
-    }
-
-    @Override
-    public void onPause() {
-        // Don't receive UI updates when Activity not active
-//        LocalBroadcastManager.getInstance(this)
-//                .unregisterReceiver(onUIUpdate);
-
-        super.onPause();
     }
 
     // Storage Methods - Task 1 uses Shared Preference
@@ -135,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    // Broadcast receiver for state updates
+    // Broadcast receiver for State updates
     private BroadcastReceiver onStateUpdate = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -144,22 +106,12 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-
-    private void callTranscribeService (){
-        Log.v(TAG, "callTranscribeService");
-        Intent transcribeIntent = new Intent(ACTION_TOAST);
-//        transcribeIntent.setAction(ACTION_TOAST);
-        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Main Activity");
-        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
-    }
-
-
+    // Updates UI with value from Shared Preference
     private void updateUI(){
         Log.v(TAG, "updateUI");
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
-        //Toast.makeText(getApplicationContext(), textString, Toast.LENGTH_SHORT).show();
         transcription.setText(textString);
     }
 
@@ -168,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
         // Missing the notification activity
         // RESEARCH - creating artificial back stack
 
-        Intent transcribeIntent = new Intent(this, TranscribeIntentService.class);
+        Intent transcribeIntent = new Intent(this, TranscribeService.class);
         transcribeIntent.setAction(ACTION_TOAST);
         transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Notification");
         PendingIntent transcribePendingIntent =
@@ -203,14 +155,8 @@ public class MainActivity extends AppCompatActivity {
 
     // NUANCE SPEECHKIT METHODS
      // State - defines states
-     // loadEarcons - load beep sounds for start, stop, and error
      // toggleReco - can press button multiple times to start and stop
-     // recognize - sets options and starts recognition session
-     // recoListener - listens to messages from the transcription service and acts
-     // stopRecording - stops the recording and transcribes
-     // cancel - stops and no transcription
      // setstate - sets state to new state (was used to update UI in sample)
-     // audioPoller (REMOVED) - allows volume display in progress bar
 
     /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
 
@@ -220,16 +166,6 @@ public class MainActivity extends AppCompatActivity {
         PROCESSING
     }
 
-    /* Earcons */
-
-    private void loadEarcons() {
-        //Load all the earcons from disk
-        Log.v(TAG,"loadEarcons");
-        startEarcon = new Audio(this, R.raw.sk_start, Configuration.PCM_FORMAT);
-        stopEarcon = new Audio(this, R.raw.sk_stop, Configuration.PCM_FORMAT);
-        errorEarcon = new Audio(this, R.raw.sk_error, Configuration.PCM_FORMAT);
-    }
-
      /* Reco transactions */
 
     private void toggleReco() {
@@ -237,15 +173,12 @@ public class MainActivity extends AppCompatActivity {
         int tranCommand = 0;
         switch (state) {
             case IDLE:
-                //recognize();
                 tranCommand = RECOGNIZE;
                 break;
             case LISTENING:
-                //stopRecording();
                 tranCommand = STOP;
                 break;
             case PROCESSING:
-                //cancel();
                 tranCommand = CANCEL;
                 break;
         }
@@ -253,83 +186,6 @@ public class MainActivity extends AppCompatActivity {
         Intent transcribeIntent = new Intent(ACTION_TRANSCRIBE);
         transcribeIntent.putExtra("ACTION_COMMAND", tranCommand);
         LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
-    }
-
-    /**
-     * Start listening to the user and streaming their voice to the server.
-     */
-    private void recognize() {
-        Log.v(TAG,"recognize");
-        //Setup our Reco transaction options.
-        Transaction.Options options = new Transaction.Options();
-        options.setRecognitionType(recognitionType);
-        options.setDetection(detectionType);
-        options.setLanguage(new Language(language));
-        options.setEarcons(startEarcon, stopEarcon, errorEarcon, null);
-
-        //Start listening
-        recoTransaction = speechSession.recognize(options, recoListener);
-    }
-
-    private Transaction.Listener recoListener = new Transaction.Listener() {
-        @Override
-        public void onStartedRecording(Transaction transaction) {
-            Log.v(TAG,"onStartedRecording");
-            transcription.append("\nonStartedRecording");
-            //We have started recording the users voice.
-            //We should update our state and start polling their volume.
-            setState(State.LISTENING);
-        }
-        @Override
-        public void onFinishedRecording(Transaction transaction) {
-            Log.v(TAG,"onFinishedRecording");
-            transcription.append("\nonFinishedRecording");
-            //We have finished recording the users voice.
-            //We should update our state and stop polling their volume.
-            setState(State.PROCESSING);
-        }
-        @Override
-        public void onRecognition(Transaction transaction, Recognition recognition) {
-            Log.v(TAG,"onRecognition");
-            transcription.append("\nonRecognition: " + recognition.getText());
-            setSharedPreference(recognition.getText());
-            updateUI();
-            //We have received a transcription of the users voice from the server.
-            setState(State.IDLE);
-        }
-        @Override
-        public void onSuccess(Transaction transaction, String s) {
-            Log.v(TAG,"onSuccess");
-            transcription.append("\nonSuccess");
-            //Notification of a successful transaction. Nothing to do here.
-        }
-        @Override
-        public void onError(Transaction transaction, String s, TransactionException e) {
-            Log.v(TAG,"onError" + e);
-            transcription.append("\nonError: " + e.getMessage() + ". " + s);
-            //Something went wrong. Check Configuration.java to ensure that your settings are correct.
-            //The user could also be offline, so be sure to handle this case appropriately.
-            //We will simply reset to the idle state.
-            setState(State.IDLE);
-        }
-    };
-
-    /**
-     * Stop recording the user
-     */
-    private void stopRecording() {
-        Log.v(TAG,"stopRecording");
-        recoTransaction.stopRecording();
-    }
-
-    /**
-     * Cancel the Reco transaction.
-     * This will only cancel if we have not received a response from the server yet.
-     */
-    private void cancel() {
-        Log.v(TAG,"cancel");
-        recoTransaction.cancel();
-        setState(State.IDLE);
     }
 
     /**

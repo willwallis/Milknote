@@ -26,8 +26,7 @@ public class TranscribeService extends Service {
     private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
-        private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
-
+    private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
 
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
@@ -75,7 +74,7 @@ public class TranscribeService extends Service {
         return super.onStartCommand(intent, flags, startId);
     }
 
-    // Broadcast receiver for toast request
+    // Broadcast receiver for toast request - keep for testing
     private BroadcastReceiver makeToast = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -92,8 +91,6 @@ public class TranscribeService extends Service {
             Log.v(TAG, "onReceive transcriber");
             int actionCommand = intent.getIntExtra("ACTION_COMMAND", 0);
             Log.v(TAG, "Transcribe command: " + actionCommand);
-//            String ToastText = "Action sent: " + actionCommand ;
-//            Toast.makeText(getApplicationContext(), ToastText, Toast.LENGTH_SHORT).show();
             switch (actionCommand) {
                 case RECOGNIZE:
                     recognize();
@@ -135,7 +132,7 @@ public class TranscribeService extends Service {
     // NUANCE SPEECHKIT METHODS
     // State - defines states
     // loadEarcons - load beep sounds for start, stop, and error
-    // toggleReco - can press button multiple times to start and stop
+    // toggleReco - can press button multiple times to start and stop <-- replaced by transcriber
     // recognize - sets options and starts recognition session
     // recoListener - listens to messages from the transcription service and acts
     // stopRecording - stops the recording and transcribes
@@ -159,31 +156,6 @@ public class TranscribeService extends Service {
         startEarcon = new Audio(this, R.raw.sk_start, Configuration.PCM_FORMAT);
         stopEarcon = new Audio(this, R.raw.sk_stop, Configuration.PCM_FORMAT);
         errorEarcon = new Audio(this, R.raw.sk_error, Configuration.PCM_FORMAT);
-    }
-
-     /* Reco transactions */
-
-    private void toggleReco() {
-        Log.v(TAG,"toggleReco");
-        int tranCommand = 0;
-        switch (state) {
-            case IDLE:
-                recognize();
-                tranCommand = RECOGNIZE;
-                break;
-            case LISTENING:
-                stopRecording();
-                tranCommand = STOP;
-                break;
-            case PROCESSING:
-                cancel();
-                tranCommand = CANCEL;
-                break;
-        }
-
-        Intent transcribeIntent = new Intent(ACTION_TRANSCRIBE);
-        transcribeIntent.putExtra("ACTION_COMMAND", tranCommand);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
     }
 
     /**

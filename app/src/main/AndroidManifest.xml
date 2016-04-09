@@ -24,9 +24,6 @@
             android:name=".TranscribeService"
             android:enabled="true"
             android:exported="true" />
-        <service
-            android:name=".TranscribeIntentService"
-            android:exported="false" />
     </application>
 
 </manifest>
