@@ -8,6 +8,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.media.TransportStateListener;
 import android.support.v7.app.AppCompatActivity;
@@ -53,7 +54,10 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
+    private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
+
     private IntentFilter uiUpdateFilter;
+    private IntentFilter setStateFilter;
 
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
@@ -85,10 +89,10 @@ public class MainActivity extends AppCompatActivity {
         updateUI();
 
         //Create a session
-        speechSession = Session.Factory.session(this, Configuration.SERVER_URI, Configuration.APP_KEY);
-
-        loadEarcons();
-        setState(State.IDLE);
+//        speechSession = Session.Factory.session(this, Configuration.SERVER_URI, Configuration.APP_KEY);
+//
+//        loadEarcons();
+//        setState(State.IDLE);
         Log.v(TAG,"onCreate");
 
         // Create Notification
@@ -98,6 +102,9 @@ public class MainActivity extends AppCompatActivity {
         uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(onUIUpdate, uiUpdateFilter);
+        setStateFilter = new IntentFilter(ACTION_SETSTATE);
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(onStateUpdate, setStateFilter);
 
 
     }
@@ -105,8 +112,8 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onPause() {
         // Don't receive UI updates when Activity not active
-        LocalBroadcastManager.getInstance(this)
-                .unregisterReceiver(onUIUpdate);
+//        LocalBroadcastManager.getInstance(this)
+//                .unregisterReceiver(onUIUpdate);
 
         super.onPause();
     }
@@ -123,9 +130,20 @@ public class MainActivity extends AppCompatActivity {
     private BroadcastReceiver onUIUpdate = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            transcription.append("\nreceived Broadcast");
+            Log.v(TAG, "onUIUpdate");
+            updateUI();
         }
     };
+
+    // Broadcast receiver for state updates
+    private BroadcastReceiver onStateUpdate = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            State newState = State.valueOf(intent.getStringExtra("newState"));
+            setState(newState);
+        }
+    };
+
 
     private void callTranscribeService (){
         Log.v(TAG, "callTranscribeService");
@@ -139,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
     private void updateUI(){
         Log.v(TAG, "updateUI");
 
-        SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
         //Toast.makeText(getApplicationContext(), textString, Toast.LENGTH_SHORT).show();
         transcription.setText(textString);
@@ -219,15 +237,15 @@ public class MainActivity extends AppCompatActivity {
         int tranCommand = 0;
         switch (state) {
             case IDLE:
-                recognize();
+                //recognize();
                 tranCommand = RECOGNIZE;
                 break;
             case LISTENING:
-                stopRecording();
+                //stopRecording();
                 tranCommand = STOP;
                 break;
             case PROCESSING:
-                cancel();
+                //cancel();
                 tranCommand = CANCEL;
                 break;
         }
