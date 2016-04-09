@@ -3,9 +3,12 @@ package com.knewto.milknote;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -46,6 +49,13 @@ public class MainActivity extends AppCompatActivity {
     private Button recordNote;
     private static final String TAG = "MainActivity";
 
+    // Service variables
+    private final String transcribeIntentName = "com.knewto.milknote.TRANSCRIBE";
+    private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
+    private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
+    private IntentFilter uiUpdateFilter;
+
+
 
 
     @Override
@@ -75,6 +85,20 @@ public class MainActivity extends AppCompatActivity {
         // Create Notification
         createNotification();
 
+        // Create Broadcast receiver for UI updates from Service
+        uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(onUIUpdate, uiUpdateFilter);
+
+    }
+
+    @Override
+    public void onPause() {
+        // Don't receive UI updates when Activity not active
+        LocalBroadcastManager.getInstance(this)
+                .unregisterReceiver(onUIUpdate);
+
+        super.onPause();
     }
 
     // Storage Methods - Task 1 uses Shared Preference
@@ -85,11 +109,32 @@ public class MainActivity extends AppCompatActivity {
         editor.commit();
     }
 
+    // Broadcast receiver for UI updates
+    private BroadcastReceiver onUIUpdate = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            transcription.append("\nreceived Broadcast");
+        }
+    };
+
+
     private void updateUI(){
+        Log.v(TAG, "updateUI");
+
         SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
         //Toast.makeText(getApplicationContext(), textString, Toast.LENGTH_SHORT).show();
         transcription.setText(textString);
+
+        //        Intent transcribeIntent = new Intent(transcribeIntentName);
+//        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
+
+        // Transcription Intent
+        Intent transcribeIntent = new Intent(this, TranscribeIntentService.class);
+        transcribeIntent.setAction(ACTION_TOAST);
+        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Main Activity");
+        this.startService(transcribeIntent);
+        Log.v(TAG, "updateUI - service started");
     }
 
     private void createNotification(){
@@ -97,9 +142,11 @@ public class MainActivity extends AppCompatActivity {
         // Missing the notification activity
         // RESEARCH - creating artifical back stack
 
-        Intent transcribeIntent = new Intent(this, MainActivity.class);
+        Intent transcribeIntent = new Intent(this, TranscribeIntentService.class);
+        transcribeIntent.setAction(ACTION_TOAST);
+        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Notification");
         PendingIntent transcribePendingIntent =
-                PendingIntent.getActivity(
+                PendingIntent.getService(
                         this,
                         0,
                         transcribeIntent,
@@ -115,7 +162,7 @@ public class MainActivity extends AppCompatActivity {
                         .setContentTitle("My notification")
                         .setContentText("Ding ol Dang!")
                         // Add media control buttons that invoke intents in your media service
-                        .addAction(android.R.drawable.ic_media_play, "Previous", transcribePendingIntent);
+                        .addAction(android.R.drawable.ic_media_play, "Transcribe", transcribePendingIntent);
 
         // Sets an ID for the notification
         int mNotificationId = 001;
