@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v4.media.TransportStateListener;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
@@ -26,7 +27,6 @@ import com.nuance.speechkit.RecognitionType;
 import com.nuance.speechkit.Session;
 import com.nuance.speechkit.Transaction;
 import com.nuance.speechkit.TransactionException;
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -50,10 +50,14 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
 
     // Service variables
-    private final String transcribeIntentName = "com.knewto.milknote.TRANSCRIBE";
     private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
+    private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
     private IntentFilter uiUpdateFilter;
+
+    private final int RECOGNIZE = 100;
+    private final int STOP = 200;
+    private final int CANCEL = 300;
 
 
 
@@ -64,7 +68,6 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         transcription = (TextView)findViewById(R.id.transcription1);
-        updateUI();
 
         // Code to run when Transcribe button is clicked
         recordNote = (Button) findViewById(R.id.button1);
@@ -74,6 +77,12 @@ public class MainActivity extends AppCompatActivity {
                 toggleReco();
             }
         });
+
+        // Start Speech Transcription Service
+        Intent transcribeServiceIntent = new Intent(this, TranscribeService.class);
+        startService(transcribeServiceIntent);
+
+        updateUI();
 
         //Create a session
         speechSession = Session.Factory.session(this, Configuration.SERVER_URI, Configuration.APP_KEY);
@@ -89,6 +98,7 @@ public class MainActivity extends AppCompatActivity {
         uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(onUIUpdate, uiUpdateFilter);
+
 
     }
 
@@ -117,6 +127,14 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    private void callTranscribeService (){
+        Log.v(TAG, "callTranscribeService");
+        Intent transcribeIntent = new Intent(ACTION_TOAST);
+//        transcribeIntent.setAction(ACTION_TOAST);
+        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Main Activity");
+        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
+    }
+
 
     private void updateUI(){
         Log.v(TAG, "updateUI");
@@ -125,22 +143,12 @@ public class MainActivity extends AppCompatActivity {
         String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
         //Toast.makeText(getApplicationContext(), textString, Toast.LENGTH_SHORT).show();
         transcription.setText(textString);
-
-        //        Intent transcribeIntent = new Intent(transcribeIntentName);
-//        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
-
-        // Transcription Intent
-        Intent transcribeIntent = new Intent(this, TranscribeIntentService.class);
-        transcribeIntent.setAction(ACTION_TOAST);
-        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Main Activity");
-        this.startService(transcribeIntent);
-        Log.v(TAG, "updateUI - service started");
     }
 
     private void createNotification(){
 
         // Missing the notification activity
-        // RESEARCH - creating artifical back stack
+        // RESEARCH - creating artificial back stack
 
         Intent transcribeIntent = new Intent(this, TranscribeIntentService.class);
         transcribeIntent.setAction(ACTION_TOAST);
@@ -208,17 +216,25 @@ public class MainActivity extends AppCompatActivity {
 
     private void toggleReco() {
         Log.v(TAG,"toggleReco");
+        int tranCommand = 0;
         switch (state) {
             case IDLE:
                 recognize();
+                tranCommand = RECOGNIZE;
                 break;
             case LISTENING:
                 stopRecording();
+                tranCommand = STOP;
                 break;
             case PROCESSING:
                 cancel();
+                tranCommand = CANCEL;
                 break;
         }
+
+        Intent transcribeIntent = new Intent(ACTION_TRANSCRIBE);
+        transcribeIntent.putExtra("ACTION_COMMAND", tranCommand);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
     }
 
     /**
