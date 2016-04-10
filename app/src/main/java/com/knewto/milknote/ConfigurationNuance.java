@@ -9,7 +9,7 @@ import com.nuance.speechkit.PcmFormat;
  *
  * Copyright (c) 2015 Nuance Communications. All rights reserved.
  */
-public class Configuration {
+public class ConfigurationNuance {
 
     //All fields are required.
     //Your credentials can be found in your Nuance Developers portal, under "Manage My Apps".

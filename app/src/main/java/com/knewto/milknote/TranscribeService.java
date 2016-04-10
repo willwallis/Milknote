@@ -62,7 +62,7 @@ public class TranscribeService extends Service {
         Log.v(TAG, "onCreate");
 
         //Create a Nuance recognition session
-        speechSession = Session.Factory.session(this, Configuration.SERVER_URI, Configuration.APP_KEY);
+        speechSession = Session.Factory.session(this, ConfigurationNuance.SERVER_URI, ConfigurationNuance.APP_KEY);
         loadEarcons();
         setState(State.IDLE);
 
@@ -159,9 +159,9 @@ public class TranscribeService extends Service {
     private void loadEarcons() {
         //Load all the earcons from disk
         Log.v(TAG,"loadEarcons");
-        startEarcon = new Audio(this, R.raw.sk_start, Configuration.PCM_FORMAT);
-        stopEarcon = new Audio(this, R.raw.sk_stop, Configuration.PCM_FORMAT);
-        errorEarcon = new Audio(this, R.raw.sk_error, Configuration.PCM_FORMAT);
+        startEarcon = new Audio(this, R.raw.sk_start, ConfigurationNuance.PCM_FORMAT);
+        stopEarcon = new Audio(this, R.raw.sk_stop, ConfigurationNuance.PCM_FORMAT);
+        errorEarcon = new Audio(this, R.raw.sk_error, ConfigurationNuance.PCM_FORMAT);
     }
 
      /* Reco transactions */
@@ -232,7 +232,7 @@ public class TranscribeService extends Service {
             Log.v(TAG, "onError: " + e.getMessage() + ". " + s);
             broadcastStatus("Failed");
 
-            //Something went wrong. Check Configuration.java to ensure that your settings are correct.
+            //Something went wrong. Check ConfigurationNuance.java to ensure that your settings are correct.
             //The user could also be offline, so be sure to handle this case appropriately.
             //We will simply reset to the idle state.
             setState(State.IDLE);
@@ -270,7 +270,7 @@ public class TranscribeService extends Service {
 
     // Broadcast status
     private void broadcastStatus(String status) {
-        Log.v(TAG,"New status: " + status);
+        Log.v(TAG, "New status: " + status);
         Intent sendStatusIntent = new Intent(ACTION_STATUS);
         sendStatusIntent.putExtra("Status", status);
         LocalBroadcastManager.getInstance(this).sendBroadcast(sendStatusIntent);
