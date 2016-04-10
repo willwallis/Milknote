@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">Milknote</string>
     <string name="pref_main_text">pref_main_text</string>
+    <string name="appwidget_text">Widget</string>
+    <string name="widget_layout_text">LaYOUT</string>
+    <string name="add_widget">Add widget</string>
 </resources>

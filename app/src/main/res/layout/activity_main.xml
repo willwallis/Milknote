@@ -11,6 +11,7 @@
     tools:context="com.knewto.milknote.MainActivity">
 
     <TextView
+        android:id="@+id/status"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:text="Transcribed text:" />

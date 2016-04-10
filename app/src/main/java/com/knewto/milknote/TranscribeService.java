@@ -1,7 +1,12 @@
 package com.knewto.milknote;
 
+import android.app.Notification;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.app.Service;
+import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -9,6 +14,7 @@ import android.content.SharedPreferences;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
@@ -27,6 +33,7 @@ public class TranscribeService extends Service {
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
     private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
+    private static final String ACTION_STATUS = "com.knewto.milknote.action.STATUS";
 
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
@@ -71,6 +78,8 @@ public class TranscribeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.v(TAG, "onStartCommand");
+
+        makeNotification("Ready to record");
 
         // Process requests from Notifications
         if(intent != null && intent.getAction() != null){
@@ -192,6 +201,7 @@ public class TranscribeService extends Service {
         @Override
         public void onStartedRecording(Transaction transaction) {
             Log.v(TAG, "onStartedRecording");
+            broadcastStatus("Recording...");
             //We have started recording the users voice.
             //We should update our state and start polling their volume.
             setState(State.LISTENING);
@@ -199,6 +209,7 @@ public class TranscribeService extends Service {
         @Override
         public void onFinishedRecording(Transaction transaction) {
             Log.v(TAG, "onFinishedRecording");
+            broadcastStatus("Processing...");
             //We have finished recording the users voice.
             //We should update our state and stop polling their volume.
             setState(State.PROCESSING);
@@ -213,11 +224,14 @@ public class TranscribeService extends Service {
         @Override
         public void onSuccess(Transaction transaction, String s) {
             Log.v(TAG, "onSuccess");
+            broadcastStatus("Success");
             //Notification of a successful transaction. Nothing to do here.
         }
         @Override
         public void onError(Transaction transaction, String s, TransactionException e) {
             Log.v(TAG, "onError: " + e.getMessage() + ". " + s);
+            broadcastStatus("Failed");
+
             //Something went wrong. Check Configuration.java to ensure that your settings are correct.
             //The user could also be offline, so be sure to handle this case appropriately.
             //We will simply reset to the idle state.
@@ -252,6 +266,75 @@ public class TranscribeService extends Service {
         Intent setStateIntent = new Intent(ACTION_SETSTATE);
         setStateIntent.putExtra("newState", newState.name());
         LocalBroadcastManager.getInstance(this).sendBroadcast(setStateIntent);
+    }
+
+    // Broadcast status
+    private void broadcastStatus(String status) {
+        Log.v(TAG,"New status: " + status);
+        Intent sendStatusIntent = new Intent(ACTION_STATUS);
+        sendStatusIntent.putExtra("Status", status);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(sendStatusIntent);
+        makeNotification(status);
+        //updateWidget(status);
+    }
+
+    // Update App Widget
+    private void updateWidget(String status){
+        Log.v(TAG, "updateWidget");
+        Intent intent = new Intent(this, MilknoteAppWidget.class);
+        intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
+        int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
+        intent.putExtra("Status", status);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);
+        sendBroadcast(intent);
+    }
+
+    // Create or Update notification
+    private void makeNotification(String status) {
+        Log.v(TAG, "makeNotification");
+
+        // Missing the notification activity
+        // RESEARCH - creating artificial back stack
+
+        Intent transcribeIntent = new Intent(this, TranscribeService.class);
+        transcribeIntent.setAction(ACTION_TRANSCRIBE);
+        PendingIntent transcribePendingIntent =
+                PendingIntent.getService(
+                        this,
+                        0,
+                        transcribeIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
+        // Create action for notification button
+        NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_media_play,
+                "Transcribe",
+                transcribePendingIntent)
+                .build();
+
+        // Create the notification
+        NotificationCompat.Builder mBuilder =
+                new NotificationCompat.Builder(this);
+
+        mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
+//                .setOngoing(true)
+                .setSmallIcon(R.drawable.ic_stat_milk)
+                .setTicker("ticker text")
+                .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
+                .setContentTitle("Milknote")
+                .setContentText(status)
+                .setPriority(Notification.PRIORITY_MAX)
+                .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
+                .addAction(recAction);
+
+        // Sets an ID for the notification
+        int mNotificationId = 001;
+        // Gets an instance of the NotificationManager service
+        NotificationManager mNotifyMgr =
+                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+        // Builds the notification and issues it.
+        mNotifyMgr.notify(mNotificationId, mBuilder.build());
     }
 
 }

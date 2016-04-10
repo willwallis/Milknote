@@ -25,6 +25,7 @@ public class MainActivity extends AppCompatActivity {
     private State state = State.IDLE;
 
     // Layout variables
+    private TextView statusText;
     private TextView transcription;
     private Button recordNote;
     private static final String TAG = "MainActivity";
@@ -34,9 +35,12 @@ public class MainActivity extends AppCompatActivity {
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
     private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
+    private static final String ACTION_STATUS = "com.knewto.milknote.action.STATUS";
+
 
     private IntentFilter uiUpdateFilter;
     private IntentFilter setStateFilter;
+    private IntentFilter setStatusFilter;
 
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
@@ -48,6 +52,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        statusText = (TextView)findViewById(R.id.status);
         transcription = (TextView)findViewById(R.id.transcription1);
 
         // Code to run when Transcribe button is clicked
@@ -66,9 +71,6 @@ public class MainActivity extends AppCompatActivity {
         // Refresh the UI in case transcription occurred from notification/widget
         updateUI();
 
-        // Create Notification
-        createNotification();
-
         // Create Broadcast receiver for UI and State updates from Service
         uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this)
@@ -76,8 +78,20 @@ public class MainActivity extends AppCompatActivity {
         setStateFilter = new IntentFilter(ACTION_SETSTATE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(onStateUpdate, setStateFilter);
+        setStatusFilter = new IntentFilter(ACTION_STATUS);
+        LocalBroadcastManager.getInstance(this)
+                .registerReceiver(onStatusUpdate, setStatusFilter);
 
 
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Make sure service is running and recreates notification when app is repopened
+        // Start the Speech Transcription Service
+        Intent transcribeServiceIntent = new Intent(this, TranscribeService.class);
+        startService(transcribeServiceIntent);
     }
 
     // Storage Methods - Task 1 uses Shared Preference
@@ -106,6 +120,16 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // Broadcast receiver for Status updates
+    private BroadcastReceiver onStatusUpdate = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            String status = intent.getStringExtra("Status");
+            statusText.setText(status);
+        }
+    };
+
+
     // Updates UI with value from Shared Preference
     private void updateUI(){
         Log.v(TAG, "updateUI");
@@ -115,51 +139,7 @@ public class MainActivity extends AppCompatActivity {
         transcription.setText(textString);
     }
 
-    private void createNotification(){
 
-        // Missing the notification activity
-        // RESEARCH - creating artificial back stack
-
-        Intent transcribeIntent = new Intent(this, TranscribeService.class);
-        transcribeIntent.setAction(ACTION_TRANSCRIBE);
-        PendingIntent transcribePendingIntent =
-                PendingIntent.getService(
-                        this,
-                        0,
-                        transcribeIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                );
-
-        // Create action for notification button
-        NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
-                android.R.drawable.ic_media_play,
-                "Transcribe",
-                transcribePendingIntent)
-                .build();
-
-        // Create the notification
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this);
-
-        mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
-                .setOngoing(true)
-                .setSmallIcon(R.drawable.ic_stat_milk)
-                .setTicker("ticker text")
-                .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
-                .setContentTitle("Milknote")
-                .setContentText("The ding ol dang text")
-                .setPriority(Notification.PRIORITY_MAX)
-                .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
-                .addAction(recAction);
-
-        // Sets an ID for the notification
-        int mNotificationId = 001;
-        // Gets an instance of the NotificationManager service
-        NotificationManager mNotifyMgr =
-                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        // Builds the notification and issues it.
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
-    }
 
 
 
