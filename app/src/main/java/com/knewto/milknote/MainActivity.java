@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
+import android.database.Cursor;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
@@ -23,6 +24,8 @@ import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import com.knewto.milknote.data.NoteContract;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -248,10 +251,22 @@ public class MainActivity extends AppCompatActivity {
     // Updates UI with value from Shared Preference
     private void updateUI(){
         Log.v(TAG, "updateUI");
+        String resultString = "No Notes";
+        Cursor noteCursor = this.getContentResolver().query(
+                NoteContract.NoteEntry.CONTENT_URI,
+                null,
+                null,
+                null,
+                null
+        );
+        if (noteCursor != null) {
+            noteCursor.moveToFirst();
+            resultString = noteCursor.getString(noteCursor.getColumnIndex(NoteContract.NoteEntry.COLUMN_NOTE_TEXT));
+        }
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String textString = sharedPref.getString(getString(R.string.pref_result_key), "No notes");
-        transcription.setText(textString);
+        transcription.setText(resultString);
     }
 
 

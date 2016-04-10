@@ -7,10 +7,12 @@ import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
@@ -18,6 +20,8 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
+import com.knewto.milknote.data.NoteContract;
+import com.knewto.milknote.data.NoteDbHelper;
 import com.nuance.speechkit.Audio;
 import com.nuance.speechkit.DetectionType;
 import com.nuance.speechkit.Language;
@@ -125,7 +129,24 @@ public class TranscribeService extends Service {
         SharedPreferences.Editor editor = sharedPref.edit();
         editor.putString(getString(R.string.pref_result_key), string);
         editor.commit();
+        recordTranscription(string);
         updateUI();
+    }
+    private void recordTranscription(String string){
+        // First step: Get reference to writable database
+        NoteDbHelper dbHelper = new NoteDbHelper(getApplicationContext());
+        SQLiteDatabase db = dbHelper.getWritableDatabase();
+        // Second Step: Create ContentValues of what you want to insert
+        ContentValues noteRecord = new ContentValues();
+        noteRecord.put(NoteContract.NoteEntry.COLUMN_NOTE_TEXT, string);
+        noteRecord.put(NoteContract.NoteEntry.COLUMN_RAW_TIME, 123434243);
+        noteRecord.put(NoteContract.NoteEntry.COLUMN_FOLDER, "Main");
+        noteRecord.put(NoteContract.NoteEntry.COLUMN_EDIT_FLAG, 0);
+        // Third Step: Insert ContentValues into database and get a row ID back
+        long noteRowId;
+        noteRowId = db.insert(NoteContract.NoteEntry.TABLE_NAME, null, noteRecord);
+        Log.v(TAG, "Database record ID: " + noteRowId);
+        db.close();
     }
 
     // Update user interface if open

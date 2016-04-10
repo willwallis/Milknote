@@ -36,6 +36,12 @@
                 android:resource="@xml/milknote_app_widget_info" />
         </receiver>
 
+        <provider
+            android:name=".data.NoteProvider"
+            android:authorities="@string/content_authority"
+            android:exported="false"
+            android:syncable="true" />
+
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"></activity>

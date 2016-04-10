@@ -5,6 +5,8 @@
     <string name="widget_layout_text">LaYOUT</string>
     <string name="add_widget">Add widget</string>
 
+    <string name="content_authority">com.knewto.milknote.app</string>
+
     <!-- Preferences -->
     <string name="pref_result_title">Result</string>
     <string name="pref_result_key">pref_result</string>
