@@ -71,6 +71,15 @@ public class TranscribeService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.v(TAG, "onStartCommand");
+
+        // Process requests from Notifications
+        if(intent != null && intent.getAction() != null){
+            String intentAction = intent.getAction();
+            if(intentAction.equals(ACTION_TRANSCRIBE)){
+                toggleReco();
+            }
+        }
+
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -89,19 +98,7 @@ public class TranscribeService extends Service {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.v(TAG, "onReceive transcriber");
-            int actionCommand = intent.getIntExtra("ACTION_COMMAND", 0);
-            Log.v(TAG, "Transcribe command: " + actionCommand);
-            switch (actionCommand) {
-                case RECOGNIZE:
-                    recognize();
-                    break;
-                case STOP:
-                    stopRecording();
-                    break;
-                case CANCEL:
-                    cancel();
-                    break;
-            }
+            toggleReco();
         }
     };
 
@@ -156,6 +153,23 @@ public class TranscribeService extends Service {
         startEarcon = new Audio(this, R.raw.sk_start, Configuration.PCM_FORMAT);
         stopEarcon = new Audio(this, R.raw.sk_stop, Configuration.PCM_FORMAT);
         errorEarcon = new Audio(this, R.raw.sk_error, Configuration.PCM_FORMAT);
+    }
+
+     /* Reco transactions */
+
+    private void toggleReco() {
+        Log.v(TAG, "toggleReco");
+        switch (state) {
+            case IDLE:
+                recognize();
+                break;
+            case LISTENING:
+                stopRecording();
+                break;
+            case PROCESSING:
+                cancel();
+                break;
+        }
     }
 
     /**

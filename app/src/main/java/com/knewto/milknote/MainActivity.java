@@ -12,7 +12,7 @@ import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.support.v4.app.NotificationCompat;
+import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
@@ -54,8 +54,8 @@ public class MainActivity extends AppCompatActivity {
         recordNote = (Button) findViewById(R.id.button1);
         recordNote.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                // Perform action on click
-                toggleReco();
+                // Start, Stop, or Cancel transcription on click
+                callRecognition();
             }
         });
 
@@ -121,8 +121,7 @@ public class MainActivity extends AppCompatActivity {
         // RESEARCH - creating artificial back stack
 
         Intent transcribeIntent = new Intent(this, TranscribeService.class);
-        transcribeIntent.setAction(ACTION_TOAST);
-        transcribeIntent.putExtra("TEXT_EXTRA", "calling from the Notification");
+        transcribeIntent.setAction(ACTION_TRANSCRIBE);
         PendingIntent transcribePendingIntent =
                 PendingIntent.getService(
                         this,
@@ -131,16 +130,27 @@ public class MainActivity extends AppCompatActivity {
                         PendingIntent.FLAG_UPDATE_CURRENT
                 );
 
+        // Create action for notification button
+        NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
+                android.R.drawable.ic_media_play,
+                "Transcribe",
+                transcribePendingIntent)
+                .build();
+
         // Create the notification
         NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this)
-                        // Show controls on lock screen even when user hides sensitive content.
-                        .setVisibility(Notification.VISIBILITY_PUBLIC)
-                        .setSmallIcon(R.drawable.ic_stat_milk)
-                        .setContentTitle("My notification")
-                        .setContentText("Ding ol Dang!")
-                        // Add media control buttons that invoke intents in your media service
-                        .addAction(android.R.drawable.ic_media_play, "Transcribe", transcribePendingIntent);
+                new NotificationCompat.Builder(this);
+
+        mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
+                .setOngoing(true)
+                .setSmallIcon(R.drawable.ic_stat_milk)
+                .setTicker("ticker text")
+                .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
+                .setContentTitle("Milknote")
+                .setContentText("The ding ol dang text")
+                .setPriority(Notification.PRIORITY_MAX)
+                .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
+                .addAction(recAction);
 
         // Sets an ID for the notification
         int mNotificationId = 001;
@@ -155,8 +165,8 @@ public class MainActivity extends AppCompatActivity {
 
     // NUANCE SPEECHKIT METHODS
      // State - defines states
-     // toggleReco - can press button multiple times to start and stop
      // setstate - sets state to new state (was used to update UI in sample)
+    // All other methods moved to TranscribeService.java
 
     /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
 
@@ -168,23 +178,8 @@ public class MainActivity extends AppCompatActivity {
 
      /* Reco transactions */
 
-    private void toggleReco() {
-        Log.v(TAG,"toggleReco");
-        int tranCommand = 0;
-        switch (state) {
-            case IDLE:
-                tranCommand = RECOGNIZE;
-                break;
-            case LISTENING:
-                tranCommand = STOP;
-                break;
-            case PROCESSING:
-                tranCommand = CANCEL;
-                break;
-        }
-
+    private void callRecognition() {
         Intent transcribeIntent = new Intent(ACTION_TRANSCRIBE);
-        transcribeIntent.putExtra("ACTION_COMMAND", tranCommand);
         LocalBroadcastManager.getInstance(this).sendBroadcast(transcribeIntent);
     }
 
