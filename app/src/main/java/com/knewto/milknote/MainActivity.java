@@ -146,6 +146,11 @@ public class MainActivity extends AppCompatActivity {
             mDrawerList.setItemChecked(position, true);
             setTitle("Stuff and stuff");
             mDrawerLayout.closeDrawer(mDrawerList);
+            // Temp navigate to Settings to set value
+            if(position == 2){
+                Intent settingsIntent = new Intent(MainActivity.this, OldSettingsActivity.class);
+                startActivity(settingsIntent);
+            }
         }
     }
 
@@ -208,7 +213,7 @@ public class MainActivity extends AppCompatActivity {
     private void setSharedPreference(String string){
         SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(getString(R.string.pref_main_text), string);
+        editor.putString(getString(R.string.pref_result_key), string);
         editor.commit();
     }
 
@@ -245,7 +250,7 @@ public class MainActivity extends AppCompatActivity {
         Log.v(TAG, "updateUI");
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        String textString = sharedPref.getString(getString(R.string.pref_main_text), "No notes");
+        String textString = sharedPref.getString(getString(R.string.pref_result_key), "No notes");
         transcription.setText(textString);
     }
 

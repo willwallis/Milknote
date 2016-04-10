@@ -57,7 +57,7 @@ public class TranscribeService extends Service {
     }
 
     @Override
-    public void onCreate(){
+    public void onCreate() {
         super.onCreate();
         Log.v(TAG, "onCreate");
 
@@ -82,9 +82,9 @@ public class TranscribeService extends Service {
         makeNotification("Ready to record");
 
         // Process requests from Notifications
-        if(intent != null && intent.getAction() != null){
+        if (intent != null && intent.getAction() != null) {
             String intentAction = intent.getAction();
-            if(intentAction.equals(ACTION_TRANSCRIBE)){
+            if (intentAction.equals(ACTION_TRANSCRIBE)) {
                 toggleReco();
             }
         }
@@ -119,17 +119,17 @@ public class TranscribeService extends Service {
 
 
     // Storage Methods - Task 1 uses Shared Preference
-    private void setSharedPreference(String string){
-        Log.v(TAG, "setSharedPreference:" + string );
+    private void setSharedPreference(String string) {
+        Log.v(TAG, "setSharedPreference:" + string);
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(getString(R.string.pref_main_text), string);
+        editor.putString(getString(R.string.pref_result_key), string);
         editor.commit();
         updateUI();
     }
 
     // Update user interface if open
-    private void updateUI(){
+    private void updateUI() {
         Log.v(TAG, "updateUI");
         Intent UIUpdateIntent = new Intent(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this).sendBroadcast(UIUpdateIntent);
@@ -158,7 +158,7 @@ public class TranscribeService extends Service {
 
     private void loadEarcons() {
         //Load all the earcons from disk
-        Log.v(TAG,"loadEarcons");
+        Log.v(TAG, "loadEarcons");
         startEarcon = new Audio(this, R.raw.sk_start, ConfigurationNuance.PCM_FORMAT);
         stopEarcon = new Audio(this, R.raw.sk_stop, ConfigurationNuance.PCM_FORMAT);
         errorEarcon = new Audio(this, R.raw.sk_error, ConfigurationNuance.PCM_FORMAT);
@@ -185,7 +185,7 @@ public class TranscribeService extends Service {
      * Start listening to the user and streaming their voice to the server.
      */
     private void recognize() {
-        Log.v(TAG,"recognize");
+        Log.v(TAG, "recognize");
         //Setup our Reco transaction options.
         Transaction.Options options = new Transaction.Options();
         options.setRecognitionType(recognitionType);
@@ -206,6 +206,7 @@ public class TranscribeService extends Service {
             //We should update our state and start polling their volume.
             setState(State.LISTENING);
         }
+
         @Override
         public void onFinishedRecording(Transaction transaction) {
             Log.v(TAG, "onFinishedRecording");
@@ -214,6 +215,7 @@ public class TranscribeService extends Service {
             //We should update our state and stop polling their volume.
             setState(State.PROCESSING);
         }
+
         @Override
         public void onRecognition(Transaction transaction, Recognition recognition) {
             Log.v(TAG, "onRecognition: " + recognition.getText());
@@ -221,12 +223,14 @@ public class TranscribeService extends Service {
             //We have received a transcription of the users voice from the server.
             setState(State.IDLE);
         }
+
         @Override
         public void onSuccess(Transaction transaction, String s) {
             Log.v(TAG, "onSuccess");
             broadcastStatus("Success");
             //Notification of a successful transaction. Nothing to do here.
         }
+
         @Override
         public void onError(Transaction transaction, String s, TransactionException e) {
             Log.v(TAG, "onError: " + e.getMessage() + ". " + s);
@@ -243,7 +247,7 @@ public class TranscribeService extends Service {
      * Stop recording the user
      */
     private void stopRecording() {
-        Log.v(TAG,"stopRecording");
+        Log.v(TAG, "stopRecording");
         recoTransaction.stopRecording();
     }
 
@@ -252,7 +256,7 @@ public class TranscribeService extends Service {
      * This will only cancel if we have not received a response from the server yet.
      */
     private void cancel() {
-        Log.v(TAG,"cancel");
+        Log.v(TAG, "cancel");
         recoTransaction.cancel();
         setState(State.IDLE);
     }
@@ -261,7 +265,7 @@ public class TranscribeService extends Service {
      * Set the state and update the button text <-- removed for now.
      */
     private void setState(State newState) {
-        Log.v(TAG,"setState: " + newState);
+        Log.v(TAG, "setState: " + newState);
         state = newState;
         Intent setStateIntent = new Intent(ACTION_SETSTATE);
         setStateIntent.putExtra("newState", newState.name());
@@ -279,62 +283,67 @@ public class TranscribeService extends Service {
     }
 
     // Update App Widget
-    private void updateWidget(String status){
+    private void updateWidget(String status) {
         Log.v(TAG, "updateWidget");
         Intent intent = new Intent(this, MilknoteAppWidget.class);
         intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
         int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
         intent.putExtra("Status", status);
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS,ids);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
         sendBroadcast(intent);
     }
 
     // Create or Update notification
     private void makeNotification(String status) {
         Log.v(TAG, "makeNotification");
+        // Check preferences before creating notification
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean notificationPref = sharedPref.getBoolean(getString(R.string.pref_notification_key), true);
+        if (notificationPref) {
 
-        // Missing the notification activity
-        // RESEARCH - creating artificial back stack
+            // Missing the notification activity
+            // RESEARCH - creating artificial back stack
 
-        Intent transcribeIntent = new Intent(this, TranscribeService.class);
-        transcribeIntent.setAction(ACTION_TRANSCRIBE);
-        PendingIntent transcribePendingIntent =
-                PendingIntent.getService(
-                        this,
-                        0,
-                        transcribeIntent,
-                        PendingIntent.FLAG_UPDATE_CURRENT
-                );
+            Intent transcribeIntent = new Intent(this, TranscribeService.class);
+            transcribeIntent.setAction(ACTION_TRANSCRIBE);
+            PendingIntent transcribePendingIntent =
+                    PendingIntent.getService(
+                            this,
+                            0,
+                            transcribeIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                    );
 
-        // Create action for notification button
-        NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
-                android.R.drawable.ic_media_play,
-                "Transcribe",
-                transcribePendingIntent)
-                .build();
+            // Create action for notification button
+            NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
+                    android.R.drawable.ic_media_play,
+                    "Transcribe",
+                    transcribePendingIntent)
+                    .build();
 
-        // Create the notification
-        NotificationCompat.Builder mBuilder =
-                new NotificationCompat.Builder(this);
+            // Create the notification
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(this);
 
-        mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
+            mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
 //                .setOngoing(true)
-                .setSmallIcon(R.drawable.ic_stat_milk)
-                .setTicker("ticker text")
-                .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
-                .setContentTitle("Milknote")
-                .setContentText(status)
-                .setPriority(Notification.PRIORITY_MAX)
-                .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
-                .addAction(recAction);
+                    .setSmallIcon(R.drawable.ic_stat_milk)
+                    .setTicker("ticker text")
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
+                    .setContentTitle("Milknote")
+                    .setContentText(status)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
+                    .addAction(recAction);
 
-        // Sets an ID for the notification
-        int mNotificationId = 001;
-        // Gets an instance of the NotificationManager service
-        NotificationManager mNotifyMgr =
-                (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-        // Builds the notification and issues it.
-        mNotifyMgr.notify(mNotificationId, mBuilder.build());
+            // Sets an ID for the notification
+            int mNotificationId = 001;
+            // Gets an instance of the NotificationManager service
+            NotificationManager mNotifyMgr =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            // Builds the notification and issues it.
+            mNotifyMgr.notify(mNotificationId, mBuilder.build());
+        }
     }
 
 }
