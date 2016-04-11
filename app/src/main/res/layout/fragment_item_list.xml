@@ -4,6 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/list"
     android:name="com.knewto.milknote.NoteListFragment"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:layout_marginLeft="16dp"
@@ -11,3 +12,4 @@
     app:layoutManager="LinearLayoutManager"
     tools:context="com.knewto.milknote.NoteListFragment"
     tools:listitem="@layout/fragment_item" />
+    <!--   android:paddingTop="?attr/actionBarSize" -->

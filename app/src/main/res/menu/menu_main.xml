@@ -1,0 +1,17 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- "The Trash Can", should appear as action button if possible -->
+    <item
+        android:id="@+id/action_trash"
+        android:icon="@drawable/ic_delete_white_24dp"
+        android:title="@string/trash_note_display"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/action_other"
+        android:icon="@drawable/ic_info_black_24dp"
+        android:title="@string/trash_note_display"
+        app:showAsAction="ifRoom"/>
+
+</menu>

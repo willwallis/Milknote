@@ -16,6 +16,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -78,6 +79,15 @@ public class MainActivity extends AppCompatActivity {
 
         setContentView(R.layout.activity_main_material);
 
+        // Insert fragment
+        if (findViewById(R.id.notelist_fragment) != null) {
+            if (savedInstanceState != null) {} else {
+                NoteListFragment noteListFragment = new NoteListFragment();
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.notelist_fragment, noteListFragment).commit();
+            }
+        }
+
         // FAB button that starts recording
         findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -93,6 +103,10 @@ public class MainActivity extends AppCompatActivity {
 
         // Refresh the UI in case transcription occurred from notification/widget
         updateUI();
+
+        // Create toolbar
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar); // Attaching the layout to the toolbar object
+        setSupportActionBar(toolbar);                   // Setting toolbar as the ActionBar with setSupportActionBar() call
 
         // Create Broadcast receiver for UI and State updates from Service
         uiUpdateFilter = new IntentFilter(ACTION_UIUPDATE);
@@ -188,13 +202,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // The action bar home/up action should open or close the drawer.
         // ActionBarDrawerToggle will take care of this.
         if (mDrawerToggle.onOptionsItemSelected(item)) {
             return true;
         }
-        return super.onOptionsItemSelected(item);
+        switch (item.getItemId()) {
+            case R.id.action_trash:
+                // User chose the "Trash" item, show the app settings UI...
+                Toast.makeText(getApplicationContext(), "Trash it!", Toast.LENGTH_SHORT).show();
+                return true;
+            case R.id.action_other:
+                // User chose the "Trash" item, show the app settings UI...
+                Toast.makeText(getApplicationContext(), "The other button!", Toast.LENGTH_SHORT).show();
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
     }
 
     @Override
