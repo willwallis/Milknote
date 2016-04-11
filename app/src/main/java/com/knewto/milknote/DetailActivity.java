@@ -10,6 +10,9 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ViewSwitcher;
 
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
+
 public class DetailActivity extends AppCompatActivity {
     String noteID = "Error no note found";
     String noteText = "Error no note found";
@@ -117,5 +120,10 @@ public class DetailActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), recordUpdateYes, Toast.LENGTH_SHORT).show();
             }
         });
+
+        AdView mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
     }
 }
