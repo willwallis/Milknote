@@ -11,9 +11,11 @@ import android.support.v4.content.Loader;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.knewto.milknote.data.NoteContract;
 
@@ -27,7 +29,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     private static final String TAG = "NoteListFragment";
 
     // REPLACE WITH DYNAMIC VALUE
-    private String currentFolder = "Main";
+    private String currentFolder;
 
     // Recycler view variables
     private NoteListRecyclerViewAdapter mAdapter;
@@ -91,6 +93,9 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item_list, container, false);
+
+        MainActivity activity = (MainActivity) getActivity();
+        currentFolder = activity.folderName;
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
 
@@ -188,6 +193,13 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         // above is about to be closed.  We need to make sure we are no
         // longer using it.
         mAdapter.swapCursor(null);
+    }
+
+    public void loadFolder(String newFolder){
+        // refresh the query
+//        Toast.makeText(getActivity(), "refreshing", Toast.LENGTH_SHORT).show();
+        currentFolder = newFolder;
+        getLoaderManager().restartLoader(LOADER_UNIQUE_ID, null, this);
     }
 
 }

@@ -1,5 +1,6 @@
 package com.knewto.milknote;
 
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -64,28 +65,24 @@ public class MainActivity extends AppCompatActivity {
     private final int STOP = 200;
     private final int CANCEL = 300;
 
+    private final int MAINNOTE = 0;
+    private final int TRASHNOTE = 1;
+    private final int SETTINGS = 2;
+    public String folderName;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        folderName = getResources().getString(R.string.default_note_folder);
+
         setContentView(R.layout.activity_main_material);
 
-        //statusText = (TextView)findViewById(R.id.status);
-        //transcription = (TextView)findViewById(R.id.transcription1);
-
-        // Code to run when Transcribe button is clicked
-//        recordNote = (Button) findViewById(R.id.button1);
-//        recordNote.setOnClickListener(new View.OnClickListener() {
-//            public void onClick(View v) {
-//                // Start, Stop, or Cancel transcription on click
-//                callRecognition();
-//            }
-//        });
-
+        // FAB button that starts recording
         findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Hello Snackbar", Snackbar.LENGTH_LONG).show();
+        //        Snackbar.make(view, "Hello Snackbar", Snackbar.LENGTH_LONG).show();
                 callRecognition();
             }
         });
@@ -152,19 +149,32 @@ public class MainActivity extends AppCompatActivity {
     private class DrawerItemClickListener implements ListView.OnItemClickListener {
         @Override
         public void onItemClick(AdapterView parent, View view, int position, long id) {
-            String ToastText = "Clicked: " + position;
-            Toast.makeText(getApplicationContext(), ToastText, Toast.LENGTH_SHORT).show();
-            // update selected item and title, then close the drawer
             mDrawerList.setItemChecked(position, true);
-            setTitle("Stuff and stuff");
             mDrawerLayout.closeDrawer(mDrawerList);
-            // Temp navigate to Settings to set value
-            if(position == 2){
-                Intent settingsIntent = new Intent(MainActivity.this, OldSettingsActivity.class);
-                startActivity(settingsIntent);
-
-
+            switch(position){
+                case MAINNOTE:
+                    setTitle(getResources().getString(R.string.default_note_display));
+                    folderName = getResources().getString(R.string.default_note_folder);
+                    refreshFragment();
+                    break;
+                case TRASHNOTE:
+                    setTitle(getResources().getString(R.string.trash_note_display));
+                    folderName = getResources().getString(R.string.trash_note_folder);
+                    refreshFragment();
+                    break;
+                case SETTINGS:
+                    Intent settingsIntent = new Intent(MainActivity.this, OldSettingsActivity.class);
+                    startActivity(settingsIntent);
+                    break;
             }
+        }
+    }
+
+    private void refreshFragment() {
+        NoteListFragment noteListFragment = (NoteListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.notelist_fragment);
+        if (noteListFragment != null) {
+            noteListFragment.loadFolder(folderName);
         }
     }
 
