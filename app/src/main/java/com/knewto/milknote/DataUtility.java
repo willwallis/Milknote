@@ -88,4 +88,86 @@ public class DataUtility {
             return null;
         }
     }
+
+    public static int updateRecord(Context context, String recordId, String newText){
+        int mRowsUpdated = 0;
+        // Defines an object to contain the updated values
+        ContentValues mUpdateValues = new ContentValues();
+        // Set Values
+        mUpdateValues.put(NoteContract.NoteEntry.COLUMN_NOTE_TEXT, newText);
+
+        // Defines selection criteria for the rows you want to update
+        String mSelectionClause = NoteContract.NoteEntry._ID +  " = ?";
+        String[] mSelectionArgs = {recordId};
+
+        // Make the update
+        mRowsUpdated = context.getContentResolver().update(
+                NoteContract.NoteEntry.CONTENT_URI,   // the user dictionary content URI
+                mUpdateValues,                       // the columns to update
+                mSelectionClause,                    // the column to select on
+                mSelectionArgs                      // the value to compare to
+        );
+
+        return mRowsUpdated;
+    }
+
+    public static int trashRecord(Context context, String recordId){
+        int mRowsTrashed = 0;
+        // Defines an object to contain the updated values
+        ContentValues mUpdateValues = new ContentValues();
+        // Set Values
+        String folder = context.getResources().getString(R.string.trash_note_folder);
+        mUpdateValues.put(NoteContract.NoteEntry.COLUMN_FOLDER, folder);
+
+        // Defines selection criteria for the rows you want to update
+        String mSelectionClause = NoteContract.NoteEntry._ID +  " = ?";
+        String[] mSelectionArgs = {recordId};
+
+        // Make the update
+        mRowsTrashed = context.getContentResolver().update(
+                NoteContract.NoteEntry.CONTENT_URI,   // the user dictionary content URI
+                mUpdateValues,                       // the columns to update
+                mSelectionClause,                    // the column to select on
+                mSelectionArgs                      // the value to compare to
+        );
+
+        return mRowsTrashed;
+    }
+
+    public static int deleteRecord(Context context, String recordId){
+        int mRowsDeleted = 0;
+
+        // Defines selection criteria for the rows you want to delete
+        String mSelectionClause = NoteContract.NoteEntry._ID +  " = ?";
+        String[] mSelectionArgs = {recordId};
+
+        // Delete the records
+        mRowsDeleted = context.getContentResolver().delete(
+                NoteContract.NoteEntry.CONTENT_URI,   // the user dictionary content URI
+                mSelectionClause,                    // the column to select on
+                mSelectionArgs                      // the value to compare to
+        );
+
+        return mRowsDeleted;
+    }
+
+    public static int emptyTrash(Context context){
+        int mRowsDeleted = 0;
+
+        // Defines selection criteria for the rows you want to delete
+        String mSelectionClause = NoteContract.NoteEntry.COLUMN_FOLDER +  " = ?";
+        String folder = context.getResources().getString(R.string.trash_note_folder);
+        String[] mSelectionArgs = {folder};
+
+        // Delete the records
+        mRowsDeleted = context.getContentResolver().delete(
+                NoteContract.NoteEntry.CONTENT_URI,   // the user dictionary content URI
+                mSelectionClause,                    // the column to select on
+                mSelectionArgs                      // the value to compare to
+        );
+
+        return mRowsDeleted;
+    }
+
+
 }

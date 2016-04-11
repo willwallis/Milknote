@@ -5,7 +5,8 @@
     <string name="widget_layout_text">LaYOUT</string>
     <string name="add_widget">Add widget</string>
     <string name="title_activity_settings">Settings</string>
-    <string name="default_note_folder">Main</string>
+    <string name="default_note_folder">main</string>
+    <string name="trash_note_folder">trash</string>
 
     <string name="content_authority">com.knewto.milknote.app</string>
 
