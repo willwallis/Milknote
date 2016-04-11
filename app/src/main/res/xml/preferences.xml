@@ -10,4 +10,15 @@
         android:defaultValue="@string/pref_notification_default"
         android:summary="@string/pref_notification_summary"
         android:key="@string/pref_notification_key" />
+    <CheckBoxPreference
+        android:title="@string/pref_location_title"
+        android:defaultValue="@string/pref_location_default"
+        android:summary="@string/pref_location_summary"
+        android:key="@string/pref_location_key" />
+    <CheckBoxPreference
+        android:title="@string/pref_GPS_title"
+        android:defaultValue="@string/pref_GPS_default"
+        android:summary="@string/pref_GPS_summary"
+        android:key="@string/pref_GPS_key" />
+
 </PreferenceScreen>

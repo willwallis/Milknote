@@ -70,7 +70,7 @@ public class NoteProvider extends ContentProvider {
                 // Construct query arguments (one per ? above)
                 selectionArgs = new String[]{folderName};
                 sortOrder = NoteContract.NoteEntry._ID + " DESC";
-                
+
                 retCursor =  mOpenHelper.getReadableDatabase().query(
                         NoteContract.NoteEntry.TABLE_NAME,
                         projection,
@@ -103,6 +103,7 @@ public class NoteProvider extends ContentProvider {
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
         retCursor.setNotificationUri(getContext().getContentResolver(), uri);
+        Log.v(TAG, "setNotificationUri: " + uri);
         return retCursor;
     }
 
@@ -128,12 +129,14 @@ public class NoteProvider extends ContentProvider {
 
     @Override
     public Uri insert(Uri uri, ContentValues values) {
+        Log.v(TAG, "Insert - started");
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
         Uri returnUri;
 
         switch (match) {
             case NOTE: {
+                Log.v(TAG, "Insert - case NOTE");
                 long _id = db.insert(NoteContract.NoteEntry.TABLE_NAME, null, values);
                 if ( _id > 0 )
                     returnUri = NoteContract.NoteEntry.buildNoteUri(_id);
@@ -144,7 +147,9 @@ public class NoteProvider extends ContentProvider {
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
+        Log.v(TAG, "Insert - returnURI: " + returnUri);
         getContext().getContentResolver().notifyChange(uri, null);
+        Log.v(TAG, "Insert - uri: " + uri);
         return returnUri;
     }
 
@@ -154,6 +159,7 @@ public class NoteProvider extends ContentProvider {
 
     @Override
     public int delete(Uri uri, String selection, String[] selectionArgs) {
+        Log.v(TAG, "Delete - started");
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
         int rowsDeleted;
@@ -179,22 +185,25 @@ public class NoteProvider extends ContentProvider {
     ///////////////////
 
     @Override
-    public int update(
-            Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+    public int update( Uri uri, ContentValues values, String selection, String[] selectionArgs) {
+        Log.v(TAG, "Update - started");
         final SQLiteDatabase db = mOpenHelper.getWritableDatabase();
         final int match = sUriMatcher.match(uri);
-        int rowsUpdated;
+        int rowsUpdated = 0;
 
         switch (match) {
             case NOTE:
+                Log.v(TAG, "Update - NOTE match");
                 rowsUpdated = db.update(NoteContract.NoteEntry.TABLE_NAME, values, selection,
                         selectionArgs);
                 break;
             default:
                 throw new UnsupportedOperationException("Unknown uri: " + uri);
         }
+        Log.v(TAG, "Update - rowsUpdated: " + rowsUpdated );
         if (rowsUpdated != 0) {
             getContext().getContentResolver().notifyChange(uri, null);
+            Log.v(TAG, "Update - notifyChange: " + uri);
         }
         return rowsUpdated;
     }

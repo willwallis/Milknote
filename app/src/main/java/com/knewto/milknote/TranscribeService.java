@@ -7,12 +7,13 @@ import android.app.Service;
 import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
-import android.database.sqlite.SQLiteDatabase;
+import android.location.Location;
+import android.net.Uri;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
@@ -20,8 +21,6 @@ import android.support.v7.app.NotificationCompat;
 import android.util.Log;
 import android.widget.Toast;
 
-import com.knewto.milknote.data.NoteContract;
-import com.knewto.milknote.data.NoteDbHelper;
 import com.nuance.speechkit.Audio;
 import com.nuance.speechkit.DetectionType;
 import com.nuance.speechkit.Language;
@@ -30,6 +29,8 @@ import com.nuance.speechkit.RecognitionType;
 import com.nuance.speechkit.Session;
 import com.nuance.speechkit.Transaction;
 import com.nuance.speechkit.TransactionException;
+
+import com.knewto.milknote.LocationService.LocalBinder;
 
 public class TranscribeService extends Service {
     private static final String TAG = "TranscribeService";
@@ -42,6 +43,16 @@ public class TranscribeService extends Service {
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
     private final int CANCEL = 300;
+
+    private final int START_LOCATION = 0;
+    private final int GET_LOCATION = 1;
+    private final int STOP_LOCATION = 2;
+
+
+    // Location Binding
+    private LocationService mBoundService;
+    boolean mIsBound = false; // Has binding been initiated
+    boolean mIsConnected = false; // Are we connected
 
     // Nuance functionality variables
     // NOTE - Nuance requires targetting 22, 23 won't work!
@@ -77,6 +88,9 @@ public class TranscribeService extends Service {
         IntentFilter transcribeFilter = new IntentFilter(ACTION_TRANSCRIBE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(transcriber, transcribeFilter);
+
+        // Bind to Location Service
+        doBindService();
     }
 
     @Override
@@ -133,20 +147,9 @@ public class TranscribeService extends Service {
         updateUI();
     }
     private void recordTranscription(String string){
-        // First step: Get reference to writable database
-        NoteDbHelper dbHelper = new NoteDbHelper(getApplicationContext());
-        SQLiteDatabase db = dbHelper.getWritableDatabase();
-        // Second Step: Create ContentValues of what you want to insert
-        ContentValues noteRecord = new ContentValues();
-        noteRecord.put(NoteContract.NoteEntry.COLUMN_NOTE_TEXT, string);
-        noteRecord.put(NoteContract.NoteEntry.COLUMN_RAW_TIME, 123434243);
-        noteRecord.put(NoteContract.NoteEntry.COLUMN_FOLDER, "Main");
-        noteRecord.put(NoteContract.NoteEntry.COLUMN_EDIT_FLAG, 0);
-        // Third Step: Insert ContentValues into database and get a row ID back
-        long noteRowId;
-        noteRowId = db.insert(NoteContract.NoteEntry.TABLE_NAME, null, noteRecord);
-        Log.v(TAG, "Database record ID: " + noteRowId);
-        db.close();
+        Location currentLocation = null;
+        if(mIsConnected){currentLocation = mBoundService.getCurrentLocation();}
+        Uri mNewUri = DataUtility.insertRecord(getApplicationContext(), string, currentLocation);
     }
 
     // Update user interface if open
@@ -154,6 +157,72 @@ public class TranscribeService extends Service {
         Log.v(TAG, "updateUI");
         Intent UIUpdateIntent = new Intent(ACTION_UIUPDATE);
         LocalBroadcastManager.getInstance(this).sendBroadcast(UIUpdateIntent);
+    }
+
+
+    // BINDING SERVICE METHODS
+    // Refer to http://developer.android.com/reference/android/app/Service.html#LocalServiceSample
+    void doBindService() {
+        Log.v(TAG, "doBindService");
+        // Establish a connection with the service.
+        Intent bindIntent = new Intent(this, LocationService.class);
+        bindService(bindIntent, mConnection, BIND_AUTO_CREATE);
+        mIsBound = true;
+    }
+
+    private ServiceConnection mConnection = new ServiceConnection() {
+        public void onServiceConnected(ComponentName className, IBinder service) {
+            Log.v(TAG, "onBindServiceConnected");
+            // Called when connection with service is established
+            LocalBinder mLocalBinder = (LocalBinder)service;
+            mBoundService = mLocalBinder.getService();
+            mIsConnected = true;
+        }
+        public void onServiceDisconnected(ComponentName className) {
+            Log.v(TAG, "onBindServiceDisconnected");
+            // Called when the service is unexpectedly disconnected -- that is, its process crashed.
+            mBoundService = null;
+            mIsBound = false;
+            mIsConnected = false;
+        }
+    };
+
+    void doUnbindService() {
+        Log.v(TAG, "doUnbindService");
+        if (mIsBound) {
+            // Detach our existing connection.
+            unbindService(mConnection);
+            mIsBound = false;
+            mIsConnected = false;
+        }
+    }
+
+    private void locationHelper(int command){
+        Log.v(TAG, "LocHelp - called with: " + command);
+        if(mIsConnected){
+            Log.v(TAG, "LocHelp - connected");
+            switch (command){
+                case START_LOCATION:
+                    mBoundService.startLocationService();
+                    break;
+                case GET_LOCATION:
+                    mBoundService.getCurrentLocation();
+                    break;
+                case STOP_LOCATION:
+                    mBoundService.stopLocationService();
+                    break;
+            }
+        } else {
+            Log.v(TAG, "LocHelp - not connected");
+        }
+    }
+
+
+    // Make sure we unbind when destroying transcribe service
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        doUnbindService();
     }
 
     // NUANCE SPEECHKIT METHODS
@@ -192,6 +261,7 @@ public class TranscribeService extends Service {
         switch (state) {
             case IDLE:
                 recognize();
+                locationHelper(START_LOCATION);
                 break;
             case LISTENING:
                 stopRecording();
@@ -249,6 +319,7 @@ public class TranscribeService extends Service {
         public void onSuccess(Transaction transaction, String s) {
             Log.v(TAG, "onSuccess");
             broadcastStatus("Success");
+            locationHelper(STOP_LOCATION);
             //Notification of a successful transaction. Nothing to do here.
         }
 
@@ -256,7 +327,7 @@ public class TranscribeService extends Service {
         public void onError(Transaction transaction, String s, TransactionException e) {
             Log.v(TAG, "onError: " + e.getMessage() + ". " + s);
             broadcastStatus("Failed");
-
+            locationHelper(STOP_LOCATION);
             //Something went wrong. Check ConfigurationNuance.java to ensure that your settings are correct.
             //The user could also be offline, so be sure to handle this case appropriately.
             //We will simply reset to the idle state.

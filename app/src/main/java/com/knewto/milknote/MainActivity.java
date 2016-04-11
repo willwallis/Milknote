@@ -8,6 +8,7 @@ import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -67,16 +68,24 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_main_material);
 
-        statusText = (TextView)findViewById(R.id.status);
-        transcription = (TextView)findViewById(R.id.transcription1);
+        //statusText = (TextView)findViewById(R.id.status);
+        //transcription = (TextView)findViewById(R.id.transcription1);
 
         // Code to run when Transcribe button is clicked
-        recordNote = (Button) findViewById(R.id.button1);
-        recordNote.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                // Start, Stop, or Cancel transcription on click
+//        recordNote = (Button) findViewById(R.id.button1);
+//        recordNote.setOnClickListener(new View.OnClickListener() {
+//            public void onClick(View v) {
+//                // Start, Stop, or Cancel transcription on click
+//                callRecognition();
+//            }
+//        });
+
+        findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "Hello Snackbar", Snackbar.LENGTH_LONG).show();
                 callRecognition();
             }
         });
@@ -153,6 +162,8 @@ public class MainActivity extends AppCompatActivity {
             if(position == 2){
                 Intent settingsIntent = new Intent(MainActivity.this, OldSettingsActivity.class);
                 startActivity(settingsIntent);
+
+
             }
         }
     }
@@ -243,7 +254,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             String status = intent.getStringExtra("Status");
-            statusText.setText(status);
+            //statusText.setText(status);
         }
     };
 
@@ -266,7 +277,7 @@ public class MainActivity extends AppCompatActivity {
 
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         String textString = sharedPref.getString(getString(R.string.pref_result_key), "No notes");
-        transcription.setText(resultString);
+        //transcription.setText(resultString);
     }
 
 
