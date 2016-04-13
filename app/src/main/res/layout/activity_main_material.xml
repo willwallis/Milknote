@@ -46,7 +46,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
         android:layout_margin="16dp"
-        android:src="@drawable/ic_stat_milk" />
+        android:src="@drawable/ic_mic_white_48dp" />
 
 </android.support.design.widget.CoordinatorLayout>
 

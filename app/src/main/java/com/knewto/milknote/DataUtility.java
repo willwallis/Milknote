@@ -111,27 +111,27 @@ public class DataUtility {
         return mRowsUpdated;
     }
 
-    public static int trashRecord(Context context, String recordId){
-        int mRowsTrashed = 0;
+    public static int changeFolder(Context context, String recordId, String folderName){
+        int mRowsUpdated = 0;
         // Defines an object to contain the updated values
         ContentValues mUpdateValues = new ContentValues();
         // Set Values
-        String folder = context.getResources().getString(R.string.trash_note_folder);
-        mUpdateValues.put(NoteContract.NoteEntry.COLUMN_FOLDER, folder);
+        //String folder = context.getResources().getString(R.string.trash_note_folder);
+        mUpdateValues.put(NoteContract.NoteEntry.COLUMN_FOLDER, folderName);
 
         // Defines selection criteria for the rows you want to update
         String mSelectionClause = NoteContract.NoteEntry._ID +  " = ?";
         String[] mSelectionArgs = {recordId};
 
         // Make the update
-        mRowsTrashed = context.getContentResolver().update(
+        mRowsUpdated = context.getContentResolver().update(
                 NoteContract.NoteEntry.CONTENT_URI,   // the user dictionary content URI
                 mUpdateValues,                       // the columns to update
                 mSelectionClause,                    // the column to select on
                 mSelectionArgs                      // the value to compare to
         );
 
-        return mRowsTrashed;
+        return mRowsUpdated;
     }
 
     public static int deleteRecord(Context context, String recordId){

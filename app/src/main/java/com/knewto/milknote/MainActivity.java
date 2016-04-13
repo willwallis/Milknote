@@ -220,10 +220,6 @@ public class MainActivity extends AppCompatActivity {
                 // User chose the "Trash" item, show the app settings UI...
                 Toast.makeText(getApplicationContext(), "Trash it!", Toast.LENGTH_SHORT).show();
                 return true;
-            case R.id.action_other:
-                // User chose the "Trash" item, show the app settings UI...
-                Toast.makeText(getApplicationContext(), "The other button!", Toast.LENGTH_SHORT).show();
-                return true;
 
             default:
                 // If we got here, the user's action was not recognized.

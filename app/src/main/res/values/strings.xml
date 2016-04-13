@@ -11,6 +11,17 @@
     <string name="trash_note_display">Trash</string>
     <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
 
+    <!--Button Labesl-->
+    <string name="edit_button_label">Edit</string>
+    <string name="trash_button_labal">Trash</string>
+    <string name="delete_button_label">Delete</string>
+    <string name="save_button_label">Save</string>
+    <string name="share_button_label">Share</string>
+    <string name="record_button_label">Record</string>
+    <string name="restore_button_label">Restore</string>
+
+
+
     <string name="content_authority">com.knewto.milknote.app</string>
 
     <!-- Preferences -->
