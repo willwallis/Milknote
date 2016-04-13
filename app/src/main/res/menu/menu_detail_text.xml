@@ -2,7 +2,6 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-
     <item
         android:id="@+id/action_trash"
         android:icon="@drawable/ic_delete_white_48dp"
@@ -15,12 +14,6 @@
         android:title="@string/share_button_label"
         app:showAsAction="ifRoom"
         app:actionProviderClass="android.support.v7.widget.ShareActionProvider"/>
-
-    <item
-        android:id="@+id/action_restore"
-        android:icon="@drawable/ic_move_to_inbox_white_48dp"
-        android:title="@string/restore_button_label"
-        app:showAsAction="ifRoom"/>
 
 </menu>
 

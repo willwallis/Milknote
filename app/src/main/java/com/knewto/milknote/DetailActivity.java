@@ -38,8 +38,13 @@ public class DetailActivity extends AppCompatActivity {
     String folder = "Error no note found";
     String edited = "Error no note found";
 
+    String formattedTime = "Time: ";
+    String formattedDate = "Date: ";
+    String formattedLocation = "Location: ";
+
     EditText vNoteEditText;
     TextView vNoteText;
+    TextView vDayDate;
     TextView vDateText;
     TextView vTimeText;
     TextView vDayText;
@@ -66,46 +71,20 @@ public class DetailActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
         setContentView(R.layout.activity_detail);
 
-        currentLayout = Layout.READ;
-
-        // SET FIELD VALUES BASED ON INCOMING INTENT
-        // Map variables to text views
-        mapViews();
         // Get values from intent and load fields
         Intent intent = getIntent();
         if (intent != null && intent.hasExtra("NoteText")) {
             loadIntent(intent);
         }
+
+        // SET FIELD VALUES BASED ON INCOMING INTENT
+        // Map variables to text views
+        mapViews();
         // Set view text to intent variables
         setViewText();
-
-        // Button listeners
-        Button editButton = (Button) findViewById(R.id.button_edit);
-        editButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                editRecord();
-            }
-        });
-        Button saveButton = (Button) findViewById(R.id.button_save);
-        saveButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                saveRecord();
-            }
-        });
-        Button trashButton = (Button) findViewById(R.id.button_trash);
-        trashButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                trashRecord();
-            }
-        });
-        Button deleteButton = (Button) findViewById(R.id.button_delete);
-        deleteButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-              deleteRecord();
-            }
-        });
 
         // Load Ad
         AdView mAdView = (AdView) findViewById(R.id.adView);
@@ -134,6 +113,14 @@ public class DetailActivity extends AppCompatActivity {
                 editRecord();
             }
         });
+
+        // Set layout based on whether record is in Trash
+        if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
+            currentLayout = Layout.RESTORE;
+            fabVisible(false);
+        } else {
+            currentLayout = Layout.READ;
+        }
     }
 
     @Override
@@ -203,6 +190,7 @@ public class DetailActivity extends AppCompatActivity {
     // Method to map fields in view
     private void mapViews(){
         vNoteText = (TextView) findViewById(R.id.noteText);
+        vDayDate =  (TextView) findViewById(R.id.dayDateText);
         vDateText = (TextView) findViewById(R.id.dateText);
         vTimeText = (TextView) findViewById(R.id.timeText);
         vDayText = (TextView) findViewById(R.id.dayText);
@@ -228,19 +216,23 @@ public class DetailActivity extends AppCompatActivity {
         locationName = intent.getStringExtra("LocationName");
         folder = intent.getStringExtra("Folder");
         edited = intent.getStringExtra("Edited");
+        formattedTime = "Time: " + timeText;
+        formattedDate = "Date: " + dayText + " - " + dateText;
+        formattedLocation = "Location: " + locationName;
     }
 
     // Method to set view text values to variables values
     private void setViewText(){
         vNoteText.setText(noteText);
         vNoteEditText.setText(noteText);
+        vDayDate.setText(formattedDate);
         vDateText.setText(dateText);
-        vTimeText.setText(timeText);
+        vTimeText.setText(formattedTime);
         vDayText.setText(dayText);
         vRawTime.setText(rawTime);
         vCoordLat.setText(coordLat);
         vCoordLong.setText(coordLong);
-        vLocationName.setText(locationName);
+        vLocationName.setText(formattedLocation);
         vFolder.setText(folder);
         vEdited.setText(edited);
     }
