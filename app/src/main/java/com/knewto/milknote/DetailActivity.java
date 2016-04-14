@@ -60,8 +60,8 @@ public class DetailActivity extends AppCompatActivity {
     CoordinatorLayout.LayoutParams originalParams;
 
     private ShareActionProvider mShareActionProvider;
-    private Layout currentLayout;
 
+    private Layout currentLayout;
     private enum Layout {
         READ,
         EDIT,
@@ -275,13 +275,16 @@ public class DetailActivity extends AppCompatActivity {
         String trashFolder = this.getResources().getString(R.string.trash_note_folder);
         int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, trashFolder);
         String recordUpdateYes = "Records trashed: " + numberUpdate;
-        // Navigate to Detail View
-        // Show snack bar on detail view
+        // Navigate to Detail View & Show snack bar on detail view
+        Intent mainIntent = new Intent(this, MainActivity.class);
+        mainIntent.putExtra("trashFlag", 1);
+        mainIntent.putExtra("recordId", noteID);
+        startActivity(mainIntent);
     }
 
     private void restoreRecord(){
-        String trashFolder = this.getResources().getString(R.string.default_note_folder);
-        int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, trashFolder);
+        String defaultFolder = this.getResources().getString(R.string.default_note_folder);
+        int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, defaultFolder);
         String recordUpdateYes = "Records restored: " + numberUpdate;
         currentLayout = Layout.READ;
         invalidateOptionsMenu();

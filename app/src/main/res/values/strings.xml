@@ -20,7 +20,16 @@
     <string name="record_button_label">Record</string>
     <string name="restore_button_label">Restore</string>
 
+    <!--Dialog Labesl-->
+    <string name="empty_dialog_title">Empty Trash</string>
+    <string name="empty_dialog_message">Are you sure you want to delete all records in trash permanently?</string>
+    <string name="recorder_dialog_title">Recording note....</string>
+    <string name="recorder_dialog_done">DONE</string>
 
+    <!-- Snackbar messages -->
+    <string name="trash_notification">Moved to Trash</string>
+    <string name="trash_restored">Note is restored</string>
+    <string name="trash_deleted">"records deleted"</string>
 
     <string name="content_authority">com.knewto.milknote.app</string>
 

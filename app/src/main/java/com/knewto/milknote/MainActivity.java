@@ -1,19 +1,23 @@
 package com.knewto.milknote;
 
-import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.preference.PreferenceManager;
+import android.support.design.widget.CoordinatorLayout;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.DialogFragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
@@ -26,14 +30,13 @@ import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.knewto.milknote.data.NoteContract;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener{
 
     // Nuance functionality variables
-    // NOTE - Nuance requires targetting 22, 23 won't work!
+    // NOTE - Nuance requires targeting 22, 23 won't work!
     private State state = State.IDLE;
 
     // Layout variables
@@ -70,7 +73,19 @@ public class MainActivity extends AppCompatActivity {
     private final int TRASHNOTE = 1;
     private final int SETTINGS = 2;
     public String folderName;
+    private String trashRecordId;
 
+    AlertDialog dialog;
+    RecordDialogFragment recordDialog;
+    private Boolean recordingDialog;
+    FloatingActionButton fab;
+    CoordinatorLayout.LayoutParams originalParams;
+
+    private Layout currentLayout;
+    private enum Layout {
+        MAIN,
+        TRASH
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -78,6 +93,22 @@ public class MainActivity extends AppCompatActivity {
         folderName = getResources().getString(R.string.default_note_folder);
 
         setContentView(R.layout.activity_main_material);
+
+        if(currentLayout == null){
+            currentLayout = Layout.MAIN;
+        }
+        if(recordingDialog == null){
+            recordingDialog = false;
+        }
+
+        // Check if navigated after trashing record, show snackbar
+        Intent intent = getIntent();
+        if (intent != null && intent.hasExtra("trashFlag")) {
+            if (intent.getIntExtra("trashFlag", 0) == 1){
+                trashRecordId = intent.getStringExtra("recordId");
+                trashNotify();
+            }
+        }
 
         // Insert fragment
         if (findViewById(R.id.notelist_fragment) != null) {
@@ -89,10 +120,12 @@ public class MainActivity extends AppCompatActivity {
         }
 
         // FAB button that starts recording
-        findViewById(R.id.fab).setOnClickListener(new View.OnClickListener() {
+        fab = (FloatingActionButton)findViewById(R.id.fab);
+        originalParams = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
+        fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-        //        Snackbar.make(view, "Hello Snackbar", Snackbar.LENGTH_LONG).show();
+                //        Snackbar.make(view, "Hello Snackbar", Snackbar.LENGTH_LONG).show();
                 callRecognition();
             }
         });
@@ -169,11 +202,13 @@ public class MainActivity extends AppCompatActivity {
                 case MAINNOTE:
                     setTitle(getResources().getString(R.string.default_note_display));
                     folderName = getResources().getString(R.string.default_note_folder);
+                    currentLayout = Layout.MAIN;
                     refreshFragment();
                     break;
                 case TRASHNOTE:
                     setTitle(getResources().getString(R.string.trash_note_display));
                     folderName = getResources().getString(R.string.trash_note_folder);
+                    currentLayout = Layout.TRASH;
                     refreshFragment();
                     break;
                 case SETTINGS:
@@ -204,7 +239,11 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
+        if(currentLayout == Layout.TRASH) {
+            getMenuInflater().inflate(R.menu.menu_main_trash, menu);
+        } else {
+            getMenuInflater().inflate(R.menu.menu_main, menu);
+        }
         return true;
     }
 
@@ -216,11 +255,9 @@ public class MainActivity extends AppCompatActivity {
             return true;
         }
         switch (item.getItemId()) {
-            case R.id.action_trash:
-                // User chose the "Trash" item, show the app settings UI...
-                Toast.makeText(getApplicationContext(), "Trash it!", Toast.LENGTH_SHORT).show();
+            case R.id.action_delete:
+                emptyTrashDialog();
                 return true;
-
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
@@ -322,8 +359,65 @@ public class MainActivity extends AppCompatActivity {
         //transcription.setText(resultString);
     }
 
+    // Displays snackbar and code for un-trash
+    private void trashNotify(){
+        final CoordinatorLayout cView = (CoordinatorLayout) findViewById(R.id.coord_layout);
+        final String restoredMessage = this.getResources().getString(R.string.trash_restored);
+        Snackbar snackBar1 = Snackbar.make(cView, this.getResources().getString(R.string.trash_notification), Snackbar.LENGTH_LONG)
+                .setAction("UNDO", new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        if (restoreRecord(trashRecordId) > 0) {
+                            Snackbar snackbar2 = Snackbar.make(cView, restoredMessage, Snackbar.LENGTH_SHORT);
+                            snackbar2.show();
+                        }
+                    }
+                });
+        snackBar1.show();
 
+    }
 
+    // Restores record from trash (triggered from snackbar trash confirmation)
+    private int restoreRecord(String noteID){
+        String defaultFolder = this.getResources().getString(R.string.default_note_folder);
+        int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, defaultFolder);
+        return numberUpdate;
+    }
+
+    // Deletes records in trash permanently
+    private void emptyTrashDialog() {
+        final String deleteMessage = this.getResources().getString(R.string.trash_deleted);
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+        builder.setTitle(getString(R.string.empty_dialog_title));
+        builder.setMessage(getString(R.string.empty_dialog_message));
+
+        String positiveText = getString(android.R.string.ok);
+        builder.setPositiveButton(positiveText,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // positive button logic
+                        int numberDeleted = DataUtility.emptyTrash(getApplicationContext());
+                        String trashEmptied = numberDeleted +  " " + deleteMessage;
+                        CoordinatorLayout cView = (CoordinatorLayout) findViewById(R.id.coord_layout);
+                        Snackbar snackbar3 = Snackbar.make(cView, trashEmptied, Snackbar.LENGTH_SHORT);
+                        snackbar3.show();
+                    }
+                });
+
+        String negativeText = getString(android.R.string.cancel);
+        builder.setNegativeButton(negativeText,
+                new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        // negative button logic
+                    }
+                });
+
+        AlertDialog dialog = builder.create();
+        // display dialog
+        dialog.show();
+    }
 
 
     // NUANCE SPEECHKIT METHODS
@@ -352,6 +446,55 @@ public class MainActivity extends AppCompatActivity {
     private void setState(State newState) {
         Log.v(TAG,"setState: " + newState);
         state = newState;
+        if(newState == State.LISTENING && recordingDialog == false){
+            showRecordDialog();
+        } else if (newState != State.LISTENING && recordingDialog == true){
+            hideRecordDialog();
+        }
+    }
+
+    // Shows recording dialog
+    private void showRecordDialog(){
+        recordingDialog = true;
+        fabVisible(false);
+        recordDialog = new RecordDialogFragment();
+        recordDialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+
+    }
+
+    // Hides recording dialog
+    private void hideRecordDialog() {
+        recordingDialog = false;
+        fabVisible(true);
+        recordDialog.dismiss();
+    }
+
+    // Record Dialog Listeners
+    @Override
+    public void onDialogPositiveClick(DialogFragment dialog) {
+        // User touched the dialog's positive button
+        callRecognition();
+    }
+
+    @Override
+    public void onDialogNegativeClick(DialogFragment dialog) {
+        // User touched the dialog's negative button
+    }
+
+    // Set FAB visible or invisible
+    private void fabVisible(Boolean visible){
+        if(visible){
+            // display FAB
+            fab.setLayoutParams(originalParams);
+            fab.setVisibility(View.VISIBLE);
+        }
+        else {
+            //hide FAB
+            CoordinatorLayout.LayoutParams currentLayoutParams = originalParams;
+            currentLayoutParams.setAnchorId(View.NO_ID);
+            fab.setLayoutParams(currentLayoutParams);
+            fab.setVisibility(View.GONE);
+        }
     }
 
 }
