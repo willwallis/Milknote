@@ -98,6 +98,7 @@ public class TranscribeService extends Service {
         Log.v(TAG, "onStartCommand");
 
         makeNotification("Ready to record");
+        //broadcastStatus(state);
 
         // Process requests from Notifications
         if (intent != null && intent.getAction() != null) {

@@ -72,13 +72,13 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
      * fragment (e.g. upon screen orientation changes).
      */
     public NoteListFragment() {
+        // Allow sending folder from Activity
+        this.setArguments(new Bundle());
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
     }
 
     // 1. initiate loader. Variables: loader_id, arguments, LoaderManager.LoaderCallbacks implementation
@@ -94,8 +94,13 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
                              Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_item_list, container, false);
 
-        MainActivity activity = (MainActivity) getActivity();
-        currentFolder = activity.folderName;
+        // Get folder from bundle
+        Bundle data = this.getArguments().getBundle("folder_data");
+        currentFolder = data.getString("folder", getResources().getString(R.string.default_note_folder));
+        Log.v(TAG,"currentFolder is: " + currentFolder);
+
+        //MainActivity activity = (MainActivity) getActivity();
+        //currentFolder = activity.folderName;
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
 
@@ -197,7 +202,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
 
     public void loadFolder(String newFolder){
         // refresh the query
-//        Toast.makeText(getActivity(), "refreshing", Toast.LENGTH_SHORT).show();
+        Toast.makeText(getActivity(), "refreshing", Toast.LENGTH_SHORT).show();
         currentFolder = newFolder;
         getLoaderManager().restartLoader(LOADER_UNIQUE_ID, null, this);
     }
