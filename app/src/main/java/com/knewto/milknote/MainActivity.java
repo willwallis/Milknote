@@ -1,5 +1,7 @@
 package com.knewto.milknote;
 
+import android.app.Fragment;
+import android.app.FragmentTransaction;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -25,6 +27,35 @@ import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
+/**
+ * Main Activity for Milknote
+ * - displays list of notes
+ * - has nav drawer to display trash folder or settings
+ * - fab begins recording and shows dialog fragment
+ * - delete empty trash icon when trash folder open
+ *
+ * Methods
+ * - setState: processes state updates from transcribe service and displays/hides recording dialog
+ * - callRecognition: sends signal to transcribe service to start/stop recording
+ * - showRecordingDialog: shows the record dialog with indeterminant progress bar
+ * - hideRecordDialog: hides the record dialog
+ * - onDialogPositiveClick: callRecognition - stops the recording (actually a toggle)
+ * - onDialogNegativeClick: required for interface, does nothing
+ * - fabVisible: toggle FAB visibility with true/false input
+ * - onStateUpdate (broadcast receiver): updated state from transcribe service
+ * - trashNotify: displays snackbar with undo when record is trashed and navigated from detailActivity
+ * - emptyTrashDialog: confirms user wants to empty trash and deletes records
+ * - onSaveInstanceState: stores key state variables (state, layout, and recording flag)
+ * - onResume: restarts Service in case it was destoyed while Activity was not active
+ *
+ * Nav Drawer & Menu Methods
+ * - onPrepareOptionsMenu: sets flag if drawer is open
+ * - onCreateOptionsMenu: if trash displays delete icon else main menu
+ * - onOptionsItemSelected: if click delete button do emptyTrashDialog
+ * - DrawerItemClickListener: takes user to main notes, trash, or settings view
+ * - refreshFragment: reloads fragment when user picks main notes or trash in drawer
+ */
+
 public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener{
 
     private static final String TAG = "MainActivity";
@@ -41,11 +72,8 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     private String trashRecordId;
 
     // Service variables
-    private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
-    private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
     private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
-    private static final String ACTION_STATUS = "com.knewto.milknote.action.STATUS";
 
     // FAB and recording dialog variables
     RecordDialogFragment recordDialog;
@@ -57,6 +85,13 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     private Layout currentLayout;
     private Boolean recordingFlag;
     private State state = State.IDLE;
+
+     /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
+    private enum State {
+        IDLE,
+        LISTENING,
+        PROCESSING
+    }
 
     private enum Layout {
         MAIN,
@@ -76,12 +111,6 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
             state = (State)savedInstanceState.get("state");
             currentLayout = (Layout)savedInstanceState.get("layout");
             recordingFlag = savedInstanceState.getBoolean("recording");
-            recordDialog =  (RecordDialogFragment) getSupportFragmentManager()
-                    .findFragmentByTag("NoticeDialogFragment");
-            if(recordDialog == null ){
-                Log.v(TAG, "Dialog not found");
-            } else{
-                Log.v(TAG, "Found my dialog");}
         }
         else {
             // Set new values
@@ -137,6 +166,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         // enable ActionBar app icon to behave as action to toggle nav drawer
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setTitle(displayName(folderName));
 
         // NAVIGATION DRAWER
         mNavOptions = getResources().getStringArray(R.array.navOptions);
@@ -157,7 +187,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
                 R.string.drawer_close  /* "close drawer" description for accessibility */
         ) {
             public void onDrawerClosed(View view) {
-                getSupportActionBar().setTitle(folderName);
+                getSupportActionBar().setTitle(displayName(folderName));
                 invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
             }
 
@@ -195,6 +225,18 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         }
     }
 
+    // Set label for folders
+    private String displayName(String folderName){
+        String displayName = getResources().getString(R.string.app_name);
+        if(folderName.equals(getResources().getString(R.string.default_note_folder))){
+            displayName = getResources().getString(R.string.default_note_display);
+        } else if (folderName.equals(getResources().getString(R.string.trash_note_folder))) {
+            displayName = getResources().getString(R.string.trash_note_display);
+        }
+        return displayName;
+    }
+
+    // Refresh list fragment if folder changes
     private void refreshFragment() {
         NoteListFragment noteListFragment = (NoteListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.notelist_fragment);
@@ -278,8 +320,8 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         super.onResume();
         // Make sure service is running and recreates notification when app is repopened
         // Start the Speech Transcription Service
-        //Intent transcribeServiceIntent = new Intent(this, TranscribeService.class);
-        //startService(transcribeServiceIntent);
+        Intent transcribeServiceIntent = new Intent(this, TranscribeService.class);
+        startService(transcribeServiceIntent);
     }
 
     // Broadcast receiver for State updates
@@ -351,20 +393,6 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         dialog.show();
     }
 
-
-    // NUANCE SPEECHKIT METHODS
-     // State - defines states
-     // setstate - sets state to new state (was used to update UI in sample)
-    // All other methods moved to TranscribeService.java
-
-    /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
-
-    private enum State {
-        IDLE,
-        LISTENING,
-        PROCESSING
-    }
-
      /* Reco transactions */
 
     private void callRecognition() {
@@ -397,11 +425,13 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     private void hideRecordDialog() {
         recordingFlag = false;
         fabVisible(true);
-        if(recordDialog == null ){
-            Log.v(TAG, "Dialog not found 2");
-        } else{
-            Log.v(TAG, "Found my dialog 2");}
-        recordDialog.dismiss();
+        // Using this method to dismiss as it works after rotation
+        FragmentTransaction ft = getFragmentManager().beginTransaction();
+        Fragment prev = getFragmentManager().findFragmentByTag("NoticeDialogFragment");
+        if (prev != null) {
+            ft.remove(prev);
+        }
+        ft.addToBackStack(null);
     }
 
     // Record Dialog Listeners
@@ -411,7 +441,6 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         callRecognition();
     }
 
-    @Override
     public void onDialogNegativeClick(DialogFragment dialog) {
         // User touched the dialog's negative button
     }

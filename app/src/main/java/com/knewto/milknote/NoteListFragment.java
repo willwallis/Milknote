@@ -202,7 +202,6 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
 
     public void loadFolder(String newFolder){
         // refresh the query
-        Toast.makeText(getActivity(), "refreshing", Toast.LENGTH_SHORT).show();
         currentFolder = newFolder;
         getLoaderManager().restartLoader(LOADER_UNIQUE_ID, null, this);
     }
