@@ -32,6 +32,11 @@ import com.nuance.speechkit.TransactionException;
 
 import com.knewto.milknote.LocationService.LocalBinder;
 
+/**
+ *
+ */
+
+
 public class TranscribeService extends Service {
     private static final String TAG = "TranscribeService";
     private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
@@ -140,10 +145,6 @@ public class TranscribeService extends Service {
     // Storage Methods - Task 1 uses Shared Preference
     private void setSharedPreference(String string) {
         Log.v(TAG, "setSharedPreference:" + string);
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sharedPref.edit();
-        editor.putString(getString(R.string.pref_result_key), string);
-        editor.commit();
         recordTranscription(string);
         updateUI();
     }

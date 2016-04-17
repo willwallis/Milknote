@@ -218,7 +218,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
                     refreshFragment();
                     break;
                 case SETTINGS:
-                    Intent settingsIntent = new Intent(MainActivity.this, OldSettingsActivity.class);
+                    Intent settingsIntent = new Intent(MainActivity.this, SettingsActivity.class);
                     startActivity(settingsIntent);
                     break;
             }

@@ -49,9 +49,6 @@
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings" />
-        <activity
-            android:name=".OldSettingsActivity"
-            android:label="@string/title_activity_settings" />
         <activity android:name=".DetailActivity"></activity>
     </application>
 
