@@ -19,7 +19,6 @@ import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.nuance.speechkit.Audio;
 import com.nuance.speechkit.DetectionType;
@@ -33,15 +32,29 @@ import com.nuance.speechkit.TransactionException;
 import com.knewto.milknote.LocationService.LocalBinder;
 
 /**
- *
- */
+ * TranscribeService
+ * Provides the Nuance functionality for the application. Utilizes Nuance demo as input.
+ * - onCreate: creates Nuance session, intent filter for recording, and binds to location service
+ * - onStartCommand: Ready to record notification, processes transcription requests from Activity
+ * - transcriber (Broadcast Receiver): Processes transcription requests from Widget & Notification
+ * - onBind: Required but not implemented, transcription service isn't bound to
+ * - recordTranscription: Gets current location. Inserts transcription in database. Calls update UI.
+ * - broadcastStatus: Broadcasts state changes (Recording, Processing, etc) for notifications
+ * - updateWidget: BROKEN not sure how to update widget
+ * - makeNotification: called from onStartCommand & broadcastStatus. makes notification.
+ * - Location Services
+ *      - doBindService: binds to location services
+ *      - mConnection (): manages connection to location services
+ *      - doUnbindService: unbinds from location service
+ *      - locationHelper: starts and stops location service during transcription
+ * - onDestroy: unbinds the service (not really required)
+ * - NUANCE Methods - see top section
+ * */
 
 
 public class TranscribeService extends Service {
     private static final String TAG = "TranscribeService";
-    private static final String ACTION_TOAST = "com.knewto.milknote.action.TOAST";
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
-    private static final String ACTION_UIUPDATE = "com.knewto.milknote.action.UIUPDATE";
     private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
     private static final String ACTION_STATUS = "com.knewto.milknote.action.STATUS";
 
@@ -87,9 +100,6 @@ public class TranscribeService extends Service {
         setState(State.IDLE);
 
         // Create intent filers
-        IntentFilter toastFilter = new IntentFilter(ACTION_TOAST);
-        LocalBroadcastManager.getInstance(this)
-                .registerReceiver(makeToast, toastFilter);
         IntentFilter transcribeFilter = new IntentFilter(ACTION_TRANSCRIBE);
         LocalBroadcastManager.getInstance(this)
                 .registerReceiver(transcriber, transcribeFilter);
@@ -103,7 +113,6 @@ public class TranscribeService extends Service {
         Log.v(TAG, "onStartCommand");
 
         makeNotification("Ready to record");
-        //broadcastStatus(state);
 
         // Process requests from Notifications
         if (intent != null && intent.getAction() != null) {
@@ -115,16 +124,6 @@ public class TranscribeService extends Service {
 
         return super.onStartCommand(intent, flags, startId);
     }
-
-    // Broadcast receiver for toast request - keep for testing
-    private BroadcastReceiver makeToast = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.v(TAG, "onReceive toast");
-            String ToastText = "Text sent: " + intent.getStringExtra("TEXT_EXTRA");
-            Toast.makeText(getApplicationContext(), ToastText, Toast.LENGTH_SHORT).show();
-        }
-    };
 
     // Broadcast receiver for transcribe request
     private BroadcastReceiver transcriber = new BroadcastReceiver() {
@@ -142,28 +141,91 @@ public class TranscribeService extends Service {
     }
 
 
-    // Storage Methods - Task 1 uses Shared Preference
-    private void setSharedPreference(String string) {
-        Log.v(TAG, "setSharedPreference:" + string);
-        recordTranscription(string);
-        updateUI();
-    }
+    // Storage Methods - Using SQL Lite
     private void recordTranscription(String string){
+        Log.v(TAG, "recordTranscription:" + string);
         Location currentLocation = null;
         if(mIsConnected){currentLocation = mBoundService.getCurrentLocation();}
         Uri mNewUri = DataUtility.insertRecord(getApplicationContext(), string, currentLocation);
     }
 
-    // Update user interface if open
-    private void updateUI() {
-        Log.v(TAG, "updateUI");
-        Intent UIUpdateIntent = new Intent(ACTION_UIUPDATE);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(UIUpdateIntent);
+    // Broadcast status
+    private void broadcastStatus(String status) {
+        Log.v(TAG, "New status: " + status);
+        Intent sendStatusIntent = new Intent(ACTION_STATUS);
+        sendStatusIntent.putExtra("Status", status);
+        LocalBroadcastManager.getInstance(this).sendBroadcast(sendStatusIntent);
+        makeNotification(status);
+        //updateWidget(status);
     }
 
+    // Update App Widget
+    private void updateWidget(String status) {
+        Log.v(TAG, "updateWidget");
+        Intent intent = new Intent(this, MilknoteAppWidget.class);
+        intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
+        int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
+        intent.putExtra("Status", status);
+        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+        sendBroadcast(intent);
+    }
 
-    // BINDING SERVICE METHODS
+    // Create or Update notification
+    private void makeNotification(String status) {
+        Log.v(TAG, "makeNotification");
+        // Check preferences before creating notification
+        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
+        boolean notificationPref = sharedPref.getBoolean(getString(R.string.pref_notification_key), true);
+        if (notificationPref) {
+
+            // Missing the notification activity
+            // RESEARCH - creating artificial back stack
+
+            Intent transcribeIntent = new Intent(this, TranscribeService.class);
+            transcribeIntent.setAction(ACTION_TRANSCRIBE);
+            PendingIntent transcribePendingIntent =
+                    PendingIntent.getService(
+                            this,
+                            0,
+                            transcribeIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                    );
+
+            // Create action for notification button
+            NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
+                    android.R.drawable.ic_media_play,
+                    "Transcribe",
+                    transcribePendingIntent)
+                    .build();
+
+            // Create the notification
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(this);
+
+            mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
+//                .setOngoing(true)
+                    .setSmallIcon(R.drawable.ic_stat_milk)
+                    .setTicker("ticker text")
+                    .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
+                    .setContentTitle("Milknote")
+                    .setContentText(status)
+                    .setPriority(Notification.PRIORITY_MAX)
+                    .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
+                    .addAction(recAction);
+
+            // Sets an ID for the notification
+            int mNotificationId = 001;
+            // Gets an instance of the NotificationManager service
+            NotificationManager mNotifyMgr =
+                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            // Builds the notification and issues it.
+            mNotifyMgr.notify(mNotificationId, mBuilder.build());
+        }
+    }
+
+    // LOCATION BINDING SERVICE METHODS
     // Refer to http://developer.android.com/reference/android/app/Service.html#LocalServiceSample
+    // 1. Bind to Location Service
     void doBindService() {
         Log.v(TAG, "doBindService");
         // Establish a connection with the service.
@@ -172,6 +234,7 @@ public class TranscribeService extends Service {
         mIsBound = true;
     }
 
+    // 2. Connection called when location service is connected
     private ServiceConnection mConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder service) {
             Log.v(TAG, "onBindServiceConnected");
@@ -189,6 +252,7 @@ public class TranscribeService extends Service {
         }
     };
 
+    // 3. Unbind Location Service
     void doUnbindService() {
         Log.v(TAG, "doUnbindService");
         if (mIsBound) {
@@ -226,6 +290,7 @@ public class TranscribeService extends Service {
         super.onDestroy();
         doUnbindService();
     }
+
 
     // NUANCE SPEECHKIT METHODS
     // State - defines states
@@ -312,7 +377,7 @@ public class TranscribeService extends Service {
         @Override
         public void onRecognition(Transaction transaction, Recognition recognition) {
             Log.v(TAG, "onRecognition: " + recognition.getText());
-            setSharedPreference(recognition.getText());
+            recordTranscription(recognition.getText());
             //We have received a transcription of the users voice from the server.
             setState(State.IDLE);
         }
@@ -364,80 +429,6 @@ public class TranscribeService extends Service {
         Intent setStateIntent = new Intent(ACTION_SETSTATE);
         setStateIntent.putExtra("newState", newState.name());
         LocalBroadcastManager.getInstance(this).sendBroadcast(setStateIntent);
-    }
-
-    // Broadcast status
-    private void broadcastStatus(String status) {
-        Log.v(TAG, "New status: " + status);
-        Intent sendStatusIntent = new Intent(ACTION_STATUS);
-        sendStatusIntent.putExtra("Status", status);
-        LocalBroadcastManager.getInstance(this).sendBroadcast(sendStatusIntent);
-        makeNotification(status);
-        //updateWidget(status);
-    }
-
-    // Update App Widget
-    private void updateWidget(String status) {
-        Log.v(TAG, "updateWidget");
-        Intent intent = new Intent(this, MilknoteAppWidget.class);
-        intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
-        int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
-        intent.putExtra("Status", status);
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
-        sendBroadcast(intent);
-    }
-
-    // Create or Update notification
-    private void makeNotification(String status) {
-        Log.v(TAG, "makeNotification");
-        // Check preferences before creating notification
-        SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
-        boolean notificationPref = sharedPref.getBoolean(getString(R.string.pref_notification_key), true);
-        if (notificationPref) {
-
-            // Missing the notification activity
-            // RESEARCH - creating artificial back stack
-
-            Intent transcribeIntent = new Intent(this, TranscribeService.class);
-            transcribeIntent.setAction(ACTION_TRANSCRIBE);
-            PendingIntent transcribePendingIntent =
-                    PendingIntent.getService(
-                            this,
-                            0,
-                            transcribeIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT
-                    );
-
-            // Create action for notification button
-            NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
-                    android.R.drawable.ic_media_play,
-                    "Transcribe",
-                    transcribePendingIntent)
-                    .build();
-
-            // Create the notification
-            NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(this);
-
-            mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
-//                .setOngoing(true)
-                    .setSmallIcon(R.drawable.ic_stat_milk)
-                    .setTicker("ticker text")
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
-                    .setContentTitle("Milknote")
-                    .setContentText(status)
-                    .setPriority(Notification.PRIORITY_MAX)
-                    .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
-                    .addAction(recAction);
-
-            // Sets an ID for the notification
-            int mNotificationId = 001;
-            // Gets an instance of the NotificationManager service
-            NotificationManager mNotifyMgr =
-                    (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            // Builds the notification and issues it.
-            mNotifyMgr.notify(mNotificationId, mBuilder.build());
-        }
     }
 
 }

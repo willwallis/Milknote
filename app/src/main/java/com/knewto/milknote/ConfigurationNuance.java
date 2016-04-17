@@ -13,7 +13,7 @@ public class ConfigurationNuance {
 
     //All fields are required.
     //Your credentials can be found in your Nuance Developers portal, under "Manage My Apps".
-//    public static final String APP_KEY = "7a213a719b3e60405fe22072d225895b09883f16e0c54bd9166fe6fb0aa76a84c9a4f664e256a44239c4b40be93d67f2c5a608a56b547e81c3657ccd0ce752d5";
+    // Using Gradle Properties
     public static final String APP_KEY = BuildConfig.NUANCE_APP_KEY;
     public static final String APP_ID = BuildConfig.NUANCE_APP_ID;
     public static final String SERVER_HOST = BuildConfig.NUANCE_SERVER_HOST;

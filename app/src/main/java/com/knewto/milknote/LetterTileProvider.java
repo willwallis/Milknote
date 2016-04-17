@@ -18,6 +18,7 @@ import android.text.TextPaint;
  * Thanks to Krrishnaaaa
  * Based on: https://android.googlesource.com/platform/packages/apps/UnifiedEmail/+/184ec73/src/com/android/mail/photomanager/LetterTileProvider.java
  */
+
 public class LetterTileProvider {
 
     /** The number of available tile colors (see R.array.letter_tile_colors) */

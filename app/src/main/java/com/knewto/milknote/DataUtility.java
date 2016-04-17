@@ -17,8 +17,15 @@ import java.util.Locale;
 
 /**
  * Created by willwallis on 4/10/16.
- * Assist with creating meta-data for transcription inserts
+ * Assist with data transactions
+ * - insertRecord: inserts a new record
+ * - getLocationName: creates user friendly name for a location
+ * - updateRecord: updates record text
+ * - changeFolder: used to assign records to trash and restore
+ * - deleteRecord: delete a specific record
+ * - emptyTrash: delete all records in trash
  */
+
 public class DataUtility {
     private static final String TAG = "DataUtility";
 
@@ -95,6 +102,7 @@ public class DataUtility {
         ContentValues mUpdateValues = new ContentValues();
         // Set Values
         mUpdateValues.put(NoteContract.NoteEntry.COLUMN_NOTE_TEXT, newText);
+        mUpdateValues.put(NoteContract.NoteEntry.COLUMN_EDIT_FLAG, 1);
 
         // Defines selection criteria for the rows you want to update
         String mSelectionClause = NoteContract.NoteEntry._ID +  " = ?";
@@ -168,6 +176,5 @@ public class DataUtility {
 
         return mRowsDeleted;
     }
-
 
 }
