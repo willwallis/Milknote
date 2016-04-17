@@ -8,27 +8,32 @@ import android.support.v4.app.Fragment;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.CursorLoader;
 import android.support.v4.content.Loader;
-import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.Toast;
 
 import com.knewto.milknote.data.NoteContract;
 
 /**
- * A fragment representing a list of Items.
- * <p/>
- * Activities containing this fragment MUST implement the {@link //OnListFragmentInteractionListener}
- * interface.
+ * A fragment representing a list of Transcriptions - uses folder to show main or trash
+ * - NoteListFragment: Enables sending the folder from Activity
+ * - onCreate: super
+ * - onActivityCreated: Initiates the cursor loader
+ * - onCreateView: Gets folder from bundle and sets up recycler view
+ * - onAttach: super
+ * - onDetach: super
+ * - onCreateLoader: Crate cursor loader
+ * - onFinishLoader: Called when loader if finished
+ * - onLoaderReset: Called when loader is no longer being users
+ * - loadFolder: Allows call from activity with new folder, reloads cursor
  */
+
 public class NoteListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
     private static final String TAG = "NoteListFragment";
 
-    // REPLACE WITH DYNAMIC VALUE
     private String currentFolder;
 
     // Recycler view variables
@@ -99,10 +104,8 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         currentFolder = data.getString("folder", getResources().getString(R.string.default_note_folder));
         Log.v(TAG,"currentFolder is: " + currentFolder);
 
-        //MainActivity activity = (MainActivity) getActivity();
-        //currentFolder = activity.folderName;
-
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
+        mRecyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
 
         // use this setting to improve performance if you know that changes
         // in content do not change the layout size of the RecyclerView
@@ -112,8 +115,8 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         mLayoutManager = new LinearLayoutManager(getActivity());
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        // ADD AN EMPTY VIEW
-        // View emptyView = rootView.findViewById(R.id.recyclerview_forecast_empty);
+        // Empty view if no records
+        View emptyView = view.findViewById(R.id.recyclerview_forecast_empty);
 
         Cursor emptyCursor = getActivity().getContentResolver().query(
                 NoteContract.NoteEntry.CONTENT_URI,
@@ -122,51 +125,29 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
                 null,
                 null);
 
-        View emptyView = view.findViewById(R.id.notelist_fragment);
+        //View emptyView = view.findViewById(R.id.notelist_fragment);
         int mChoiceMode = 0;
         // specify an adapter (see also next example)
-        mAdapter = new NoteListRecyclerViewAdapter(getActivity(), new NoteListRecyclerViewAdapter.NoteAdapterOnClickHandler() {
-            @Override
-            public void onClick(Long date, NoteListRecyclerViewAdapter.NoteAdapterViewHolder vh) {
-//                String locationSetting = Utility.getPreferredLocation(getActivity());
-//                ((Callback) getActivity())
-//                        .onItemSelected(WeatherContract.WeatherEntry.buildWeatherLocationWithDate(
-//                                        locationSetting, date),
-//                                vh
-//                        );
-            }
-        }, emptyView, mChoiceMode);
+        mAdapter =  new NoteListRecyclerViewAdapter(getActivity(),
+                    new NoteListRecyclerViewAdapter.NoteAdapterOnClickHandler() {
+                        @Override
+                        public void onClick(Long date, NoteListRecyclerViewAdapter.NoteAdapterViewHolder vh) {}
+                    },
+                    emptyView,
+                    mChoiceMode);
 
-        //mAdapter = new NoteListRecyclerViewAdapter(emptyCursor);
         mRecyclerView.setAdapter(mAdapter);
-
-
         return view;
-    }
-
-
-    public interface Callback {
-        /**
-         * DetailFragmentCallback for when an item has been selected.
-         */
-        public void onItemSelected(Uri dateUri, NoteListRecyclerViewAdapter.NoteAdapterViewHolder vh);
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-//        if (context instanceof OnListFragmentInteractionListener) {
-//            mListener = (OnListFragmentInteractionListener) context;
-//        } else {
-//            throw new RuntimeException(context.toString()
-//                    + " must implement OnListFragmentInteractionListener");
-//        }
     }
 
     @Override
     public void onDetach() {
         super.onDetach();
-//        mListener = null;
     }
 
     // 2. Create and load a new cursor with Note data

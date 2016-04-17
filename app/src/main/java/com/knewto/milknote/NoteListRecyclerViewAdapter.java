@@ -2,7 +2,9 @@ package com.knewto.milknote;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -11,66 +13,28 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
-import java.util.List;
+/**
+ * NoteListRecyclerViewAdapter
+ * Adapter for Notes RecyclerView in NoteListFragment
+ * - NoteListRecyclerViewAdapter: constructor set context, clickhandler, and emptyview.
+ * - onCreateViewHolder: Inflates the list item
+ * - onBindViewHolder: Maps the data to the list item
+ * - getItemCount: Number of items, used to show empty view if zero
+ * - swapCursor: Does a notify to swap cursor
+ * - NoteAdapterOnClickHandler - interface: used by NoteListFragment to handle clikcks
+ * - NoteAdapterViewHolder - maps viewholder to layout and creates onclick intent.
+ */
 
 public class NoteListRecyclerViewAdapter extends RecyclerView.Adapter<NoteListRecyclerViewAdapter.NoteAdapterViewHolder> {
     private static final String TAG = "NoteListAdapter";
-    
-    private static final int VIEW_TYPE_TODAY = 0;
-    private static final int VIEW_TYPE_FUTURE_DAY = 1;
-
-    // Flag to determine if we want to use a separate view for "today".
-    private boolean mUseTodayLayout = true;
-
-    private Cursor mCursor;
     final private Context mContext;
     final private NoteAdapterOnClickHandler mClickHandler;
     final private View mEmptyView;
-
-    /**
-     * Cache of the children views for a forecast list item.
-     */
-    public class NoteAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
-        public final TextView mNoteContent;
-
-        public NoteAdapterViewHolder(View view) {
-            super(view);
-            Log.v(TAG, "View Holder");
-            mNoteContent = (TextView) view.findViewById(R.id.content);
-            view.setOnClickListener(this);
-        }
-
-        @Override
-        public void onClick(View v) {
-            int adapterPosition = getAdapterPosition();
-            mCursor.moveToPosition(adapterPosition);
-//            String message = "Current Postion: " + adapterPosition;
-//            Toast.makeText(mContext, message, Toast.LENGTH_SHORT).show();
-            Intent detailIntent = new Intent(mContext, DetailActivity.class);
-            detailIntent.putExtra("ID", mCursor.getString(NoteListFragment.COL_NOTE_ID));
-            detailIntent.putExtra("NoteText", mCursor.getString(NoteListFragment.COL_NOTE_TEXT));
-            detailIntent.putExtra("DateText", mCursor.getString(NoteListFragment.COL_DATE_TEXT));
-            detailIntent.putExtra("TimeText", mCursor.getString(NoteListFragment.COL_TIME_TEXT));
-            detailIntent.putExtra("DayText", mCursor.getString(NoteListFragment.COL_DAY_TEXT));
-            detailIntent.putExtra("RawTime", mCursor.getString(NoteListFragment.COL_RAW_TIME));
-            detailIntent.putExtra("CoordLat", mCursor.getString(NoteListFragment.COL_LAT));
-            detailIntent.putExtra("CoordLong", mCursor.getString(NoteListFragment.COL_LONG));
-            detailIntent.putExtra("LocationName", mCursor.getString(NoteListFragment.COL_LOCATION_NAME));
-            detailIntent.putExtra("Folder", mCursor.getString(NoteListFragment.COL_FOLDER));
-            detailIntent.putExtra("Edited", mCursor.getString(NoteListFragment.COL_EDIT_FLAG));
-            mContext.startActivity(detailIntent);
-
-        }
-    }
-
-    public static interface NoteAdapterOnClickHandler {
-        void onClick(Long date, NoteAdapterViewHolder vh);
-    }
+    private Cursor mCursor;
 
     public NoteListRecyclerViewAdapter(Context context, NoteAdapterOnClickHandler dh, View emptyView, int choiceMode) {
-        Log.v(TAG, "Contructor");
+        Log.v(TAG, "Constructor");
         mContext = context;
         mClickHandler = dh;
         mEmptyView = emptyView;
@@ -91,36 +55,23 @@ public class NoteListRecyclerViewAdapter extends RecyclerView.Adapter<NoteListRe
         mCursor.moveToPosition(position);
         String noteText = mCursor.getString(NoteListFragment.COL_NOTE_TEXT);
 
+        // Set bitmap
+        final Resources res = mContext.getResources();
+        final int tileSize = res.getDimensionPixelSize(R.dimen.letter_tile_size);
+
+        final LetterTileProvider tileProvider = new LetterTileProvider(mContext);
+        final Bitmap letterTile = tileProvider.getLetterTile(noteText, noteText, tileSize, tileSize);
+
+        NoteAdapterViewHolder.mNoteImage.setImageBitmap(letterTile);
+
         // Find TextView and set note text on it
         NoteAdapterViewHolder.mNoteContent.setText(noteText);
-        }
-
-    public void onRestoreInstanceState(Bundle savedInstanceState) {
-//        mICM.onRestoreInstanceState(savedInstanceState);
-    }
-
-    public void onSaveInstanceState(Bundle outState) {
-  //      mICM.onSaveInstanceState(outState);
-    }
-
-    public void setUseTodayLayout(boolean useTodayLayout) {
-        mUseTodayLayout = useTodayLayout;
-    }
-
-    public int getSelectedItemPosition() {
- //       return mICM.getSelectedItemPosition();
-        return 0;
-    }
-
-    @Override
-    public int getItemViewType(int position) {
-        return (position == 0 && mUseTodayLayout) ? VIEW_TYPE_TODAY : VIEW_TYPE_FUTURE_DAY;
     }
 
     @Override
     public int getItemCount() {
         Log.v(TAG, "Item Count");
-        if ( null == mCursor ) return 0;
+        if (null == mCursor) return 0;
         return mCursor.getCount();
     }
 
@@ -128,17 +79,46 @@ public class NoteListRecyclerViewAdapter extends RecyclerView.Adapter<NoteListRe
         Log.v(TAG, "Swap Cursor");
         mCursor = newCursor;
         notifyDataSetChanged();
-//        mEmptyView.setVisibility(getItemCount() == 0 ? View.VISIBLE : View.GONE);
+        mEmptyView.setVisibility(getItemCount() == 0 ? View.VISIBLE : View.GONE);
     }
 
-    public Cursor getCursor() {
-        return mCursor;
+    public static interface NoteAdapterOnClickHandler {
+        void onClick(Long date, NoteAdapterViewHolder vh);
     }
 
-    public void selectView(RecyclerView.ViewHolder viewHolder) {
-        if ( viewHolder instanceof NoteAdapterViewHolder ) {
-            NoteAdapterViewHolder vfh = (NoteAdapterViewHolder)viewHolder;
-            vfh.onClick(vfh.itemView);
+    /**
+     * Cache of the children views for a forecast list item.
+     */
+    public class NoteAdapterViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
+        public final TextView mNoteContent;
+        public final ImageView mNoteImage;
+
+        public NoteAdapterViewHolder(View view) {
+            super(view);
+            Log.v(TAG, "View Holder");
+            mNoteContent = (TextView) view.findViewById(R.id.content);
+            mNoteImage = (ImageView) view.findViewById(R.id.letter_image);
+            view.setOnClickListener(this);
+        }
+
+        @Override
+        public void onClick(View v) {
+            int adapterPosition = getAdapterPosition();
+            mCursor.moveToPosition(adapterPosition);
+            Intent detailIntent = new Intent(mContext, DetailActivity.class);
+            detailIntent.putExtra("ID", mCursor.getString(NoteListFragment.COL_NOTE_ID));
+            detailIntent.putExtra("NoteText", mCursor.getString(NoteListFragment.COL_NOTE_TEXT));
+            detailIntent.putExtra("DateText", mCursor.getString(NoteListFragment.COL_DATE_TEXT));
+            detailIntent.putExtra("TimeText", mCursor.getString(NoteListFragment.COL_TIME_TEXT));
+            detailIntent.putExtra("DayText", mCursor.getString(NoteListFragment.COL_DAY_TEXT));
+            detailIntent.putExtra("RawTime", mCursor.getString(NoteListFragment.COL_RAW_TIME));
+            detailIntent.putExtra("CoordLat", mCursor.getString(NoteListFragment.COL_LAT));
+            detailIntent.putExtra("CoordLong", mCursor.getString(NoteListFragment.COL_LONG));
+            detailIntent.putExtra("LocationName", mCursor.getString(NoteListFragment.COL_LOCATION_NAME));
+            detailIntent.putExtra("Folder", mCursor.getString(NoteListFragment.COL_FOLDER));
+            detailIntent.putExtra("Edited", mCursor.getString(NoteListFragment.COL_EDIT_FLAG));
+            mContext.startActivity(detailIntent);
+
         }
     }
 }

@@ -10,6 +10,7 @@
     <string name="trash_note_folder">trash</string>
     <string name="trash_note_display">Trash</string>
     <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
+    <string name="no_records">"No notes. Click microphone to transcribe your first note."</string>
 
     <!--Button Labesl-->
     <string name="edit_button_label">Edit</string>
@@ -52,6 +53,19 @@
     <string name="pref_GPS_key">pref_use_gps</string>
     <string name="pref_GPS_default">true</string>
     <string name="pref_GPS_summary">Use GPS to determine location</string>
+
+
+    <!-- All of the possible tile background colors -->
+    <array name="letter_tile_colors">
+        <item>#f16364</item>
+        <item>#f58559</item>
+        <item>#f9a43e</item>
+        <item>#e4c62e</item>
+        <item>#67bf74</item>
+        <item>#59a2be</item>
+        <item>#2093cd</item>
+        <item>#ad62a7</item>
+    </array>
 
 
     <!-- Nav Drawer -->
