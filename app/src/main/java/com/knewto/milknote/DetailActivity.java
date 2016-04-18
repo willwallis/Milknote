@@ -25,18 +25,32 @@ import android.widget.ViewSwitcher;
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
 
+/**
+ * Detail Activity
+ * displays details of transcribed note and allows editing and trashing of note
+ * - onCreate: load intent, map and set text view values, load ad, create fab, set layout based on folder
+ * - onCreateOptionsMenu: READ - edit, trash, share, EDIT - save, RESTORE - trashed record restore
+ * - createShareIntent: Creates share intent used by share action provider
+ * - onOptionsItemSelected: trash, save, or restore record based on selection
+ * - mapViews: set view variables equal to textviews, etc.
+ * - loadIntent: set value variables equal to content of intent
+ * - setViewText: set view variables equal to value variables
+ * - editRecord: switch to edit text, hide fab, change menu, and show keyboard.
+ * - saveRecord: set text and value variable, update database, show fab, change menu, and hide keyboard.
+ * - trashRecord: Update record folder, navigate to main activity with trash flag and note id set.
+ * - restoreRecord: Update folder, change layout view, update menu, and show fab
+ * - fabVisible: Make Fab visible based on boolean input.
+ */
+
 public class DetailActivity extends AppCompatActivity {
-    String noteID = "Error no note found";
+    String noteID = "";
     String noteText = "Error no note found";
-    String dateText = "Error no note found";
-    String timeText = "Error no note found";
-    String dayText = "Error no note found";
-    String rawTime = "Error no note found";
-    String coordLat = "Error no note found";
-    String coordLong = "Error no note found";
-    String locationName = "Error no note found";
-    String folder = "Error no note found";
-    String edited = "Error no note found";
+    String noteEditText = "";
+    String dateText = "";
+    String timeText = "";
+    String dayText = "";
+    String locationName = "";
+    String folder = "";
 
     String formattedTime = "Time: ";
     String formattedDate = "Date: ";
@@ -45,15 +59,8 @@ public class DetailActivity extends AppCompatActivity {
     EditText vNoteEditText;
     TextView vNoteText;
     TextView vDayDate;
-    TextView vDateText;
     TextView vTimeText;
-    TextView vDayText;
-    TextView vRawTime;
-    TextView vCoordLat;
-    TextView vCoordLong;
     TextView vLocationName;
-    TextView vFolder;
-    TextView vEdited;
 
     // FAB Variables
     FloatingActionButton fab;
@@ -73,16 +80,59 @@ public class DetailActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_detail);
-
-        // Get values from intent and load fields
-        Intent intent = getIntent();
-        if (intent != null && intent.hasExtra("NoteText")) {
-            loadIntent(intent);
-        }
-
-        // SET FIELD VALUES BASED ON INCOMING INTENT
         // Map variables to text views
         mapViews();
+
+        // FAB button that starts editing
+        fab = (FloatingActionButton)findViewById(R.id.fab);
+        originalParams = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                editRecord();
+            }
+        });
+
+        // Check whether we're recreating a previously destroyed instance
+        if (savedInstanceState != null) {
+            // Restore value of members from saved state
+            currentLayout = (Layout)savedInstanceState.get("layout");
+            noteID = savedInstanceState.getString("noteID");
+            noteText = savedInstanceState.getString("noteText");
+            noteEditText = savedInstanceState.getString("noteEditText");
+            formattedDate = savedInstanceState.getString("formattedDate");
+            formattedTime = savedInstanceState.getString("formattedTime");
+            formattedLocation = savedInstanceState.getString("formattedLocation");
+            folder = savedInstanceState.getString("folder");
+            if (currentLayout.equals(Layout.EDIT)){
+                // Set up the edit view
+                ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
+                switcher.showNext(); // viewswitcher swaps textview for edittextview
+                vNoteEditText.requestFocus(); // Focuses on edit text
+                fabVisible(false); // Hide the FAB
+                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+                imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
+            } else if (currentLayout.equals(Layout.RESTORE)){
+                // Make Restore view changes
+                fabVisible(false);
+            }
+        }
+        else {
+            // First Load
+            // Get values from intent and load fields
+            Intent intent = getIntent();
+            if (intent != null && intent.hasExtra("NoteText")) {
+                loadIntent(intent);
+            }
+            // Set layout based on whether record is in Trash
+            if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
+                currentLayout = Layout.RESTORE;
+                fabVisible(false);
+            } else {
+                currentLayout = Layout.READ;
+            }
+        }
+
         // Set view text to intent variables
         setViewText();
 
@@ -104,23 +154,6 @@ public class DetailActivity extends AppCompatActivity {
         });
         getSupportActionBar().setTitle("");
 
-        // FAB button that starts editing
-        fab = (FloatingActionButton)findViewById(R.id.fab);
-        originalParams = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                editRecord();
-            }
-        });
-
-        // Set layout based on whether record is in Trash
-        if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
-            currentLayout = Layout.RESTORE;
-            fabVisible(false);
-        } else {
-            currentLayout = Layout.READ;
-        }
     }
 
     @Override
@@ -145,7 +178,6 @@ public class DetailActivity extends AppCompatActivity {
         return true;
     }
 
-    // SHARE INTENT METHODS
     // Call to update the share intent
     private void setShareIntent() {
         if (mShareActionProvider != null) {
@@ -157,14 +189,6 @@ public class DetailActivity extends AppCompatActivity {
             mShareActionProvider.setShareIntent(shareIntent);
         }
     }
-
-    private Intent createShareIntent() {
-        Intent shareIntent = new Intent(Intent.ACTION_SEND);
-        shareIntent.setType("text/plain");
-        shareIntent.putExtra(Intent.EXTRA_TEXT, noteText);
-        return shareIntent;
-    }
-
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
@@ -187,19 +211,26 @@ public class DetailActivity extends AppCompatActivity {
         }
     }
 
+    // Save setup variables on rotation
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        outState.putSerializable("layout", currentLayout);
+        outState.putString("noteID", noteID);
+        outState.putString("noteText", noteText);
+        outState.putString("noteEditText", noteEditText);
+        outState.putString("formattedDate", formattedDate);
+        outState.putString("formattedTime", formattedTime);
+        outState.putString("formattedLocation", formattedLocation);
+        outState.putString("folder", folder);
+        super.onSaveInstanceState(outState);
+    }
+
     // Method to map fields in view
     private void mapViews(){
         vNoteText = (TextView) findViewById(R.id.noteText);
         vDayDate =  (TextView) findViewById(R.id.dayDateText);
-        vDateText = (TextView) findViewById(R.id.dateText);
         vTimeText = (TextView) findViewById(R.id.timeText);
-        vDayText = (TextView) findViewById(R.id.dayText);
-        vRawTime = (TextView) findViewById(R.id.rawTime);
-        vCoordLat = (TextView) findViewById(R.id.lat_coord);
-        vCoordLong = (TextView) findViewById(R.id.long_coord);
         vLocationName = (TextView) findViewById(R.id.locationName);
-        vFolder = (TextView) findViewById(R.id.folder);
-        vEdited = (TextView) findViewById(R.id.editBox);
         vNoteEditText = (EditText) findViewById(R.id.noteEditText);
     }
 
@@ -210,12 +241,8 @@ public class DetailActivity extends AppCompatActivity {
         dateText = intent.getStringExtra("DateText");
         timeText = intent.getStringExtra("TimeText");
         dayText = intent.getStringExtra("DayText");
-        rawTime = intent.getStringExtra("RawTime");
-        coordLat = intent.getStringExtra("CoordLat");
-        coordLong = intent.getStringExtra("CoordLong");
         locationName = intent.getStringExtra("LocationName");
         folder = intent.getStringExtra("Folder");
-        edited = intent.getStringExtra("Edited");
         formattedTime = "Time: " + timeText;
         formattedDate = "Date: " + dayText + " - " + dateText;
         formattedLocation = "Location: " + locationName;
@@ -226,15 +253,8 @@ public class DetailActivity extends AppCompatActivity {
         vNoteText.setText(noteText);
         vNoteEditText.setText(noteText);
         vDayDate.setText(formattedDate);
-        vDateText.setText(dateText);
         vTimeText.setText(formattedTime);
-        vDayText.setText(dayText);
-        vRawTime.setText(rawTime);
-        vCoordLat.setText(coordLat);
-        vCoordLong.setText(coordLong);
         vLocationName.setText(formattedLocation);
-        vFolder.setText(folder);
-        vEdited.setText(edited);
     }
 
     // METHODS FOR BUTTON
@@ -289,13 +309,6 @@ public class DetailActivity extends AppCompatActivity {
         currentLayout = Layout.READ;
         invalidateOptionsMenu();
         fabVisible(true);
-    }
-
-    // Should be moved to main activity
-    private void deleteRecord(){
-        int numberUpdate = DataUtility.deleteRecord(getApplicationContext(), noteID);
-        String recordUpdateYes = "Records deleted: " + numberUpdate;
-        Toast.makeText(getApplicationContext(), recordUpdateYes, Toast.LENGTH_SHORT).show();
     }
 
     // Set FAB visible or invisible

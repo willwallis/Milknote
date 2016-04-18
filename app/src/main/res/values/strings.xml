@@ -10,6 +10,10 @@
     <string name="widget_layout_text">LaYOUT</string>
     <string name="add_widget">Add widget</string>
 
+    <!-- Notifications -->
+    <string name="action_transcribe">Transcribe</string>
+    <string name="action_stop">Stop</string>
+
     <!-- Folders -->
     <string name="default_note_folder">Main</string>
     <string name="default_note_display">Notes</string>
@@ -44,6 +48,12 @@
     <string name="pref_notification_key">pref_notifications</string>
     <string name="pref_notification_default">true</string>
     <string name="pref_notification_summary">Create quick note notification upon app start</string>
+
+    <string name="pref_dismiss_title">Permanent Notifications</string>
+    <string name="pref_dismiss_key">pref_dismiss</string>
+    <string name="pref_dismiss_default">false</string>
+    <string name="pref_dismiss_summary">Make notifications permanent (unable to dismiss with swipe)</string>
+
 
     <string name="pref_location_title">Store Location</string>
     <string name="pref_location_key">pref_store_location</string>

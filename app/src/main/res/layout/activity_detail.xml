@@ -35,21 +35,30 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
                 android:id="@+id/timeText"
                 android:text="Time Text" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="4dp"
                 android:id="@+id/dayDateText"
                 android:text="Day Date Text" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
                 android:id="@+id/locationName"
                 android:text="Location Name" />
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="@color/divider" />
             <ViewSwitcher
                 xmlns:android="http://schemas.android.com/apk/res/android"
                 android:id="@+id/my_switcher"
+                android:layout_marginTop="8dp"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" >
                 <TextView
@@ -71,46 +80,6 @@
                     android:layout_alignParentLeft="true"
                     android:layout_alignParentStart="true" />
             </ViewSwitcher>
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/dateText"
-                android:text="Date Text" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/dayText"
-                android:text="Day Text" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/rawTime"
-                android:text="Raw Time" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/lat_coord"
-                android:text="Latitude" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/long_coord"
-                android:text="Longitude" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/folder"
-                android:text="Folder" />
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:id="@+id/editBox"
-                android:text="Been Edited" />
-
-
-
         </LinearLayout>
 
         <!-- End your scrolling content -->

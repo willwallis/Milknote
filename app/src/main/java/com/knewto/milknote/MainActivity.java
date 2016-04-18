@@ -8,6 +8,7 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.res.Configuration;
+import android.graphics.Color;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -26,6 +27,7 @@ import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 
 /**
  * Main Activity for Milknote
@@ -343,10 +345,16 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
                     public void onClick(View view) {
                         if (restoreRecord(trashRecordId) > 0) {
                             Snackbar snackbar2 = Snackbar.make(cView, restoredMessage, Snackbar.LENGTH_SHORT);
+                            View snackView= snackbar2.getView();
+                            TextView tv = (TextView) snackView.findViewById(android.support.design.R.id.snackbar_text);
+                            tv.setTextColor(Color.WHITE);
                             snackbar2.show();
                         }
                     }
                 });
+        View snackView= snackBar1.getView();
+        TextView tv = (TextView) snackView.findViewById(android.support.design.R.id.snackbar_text);
+        tv.setTextColor(Color.WHITE);
         snackBar1.show();
 
     }
@@ -375,6 +383,9 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
                         String trashEmptied = numberDeleted +  " " + deleteMessage;
                         CoordinatorLayout cView = (CoordinatorLayout) findViewById(R.id.coord_layout);
                         Snackbar snackbar3 = Snackbar.make(cView, trashEmptied, Snackbar.LENGTH_SHORT);
+                        View snackView= snackbar3.getView();
+                        TextView tv = (TextView) snackView.findViewById(android.support.design.R.id.snackbar_text);
+                        tv.setTextColor(Color.WHITE);
                         snackbar3.show();
                     }
                 });

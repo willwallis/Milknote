@@ -176,6 +176,7 @@ public class TranscribeService extends Service {
         // Check preferences before creating notification
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         boolean notificationPref = sharedPref.getBoolean(getString(R.string.pref_notification_key), true);
+        boolean dismissPref = sharedPref.getBoolean(getString(R.string.pref_dismiss_key), true);
         if (notificationPref) {
 
             // Missing the notification activity
@@ -191,10 +192,21 @@ public class TranscribeService extends Service {
                             PendingIntent.FLAG_UPDATE_CURRENT
                     );
 
+            // select icon for action based on state
+            int iconImage;
+            String iconText;
+            if(state.equals(State.IDLE)){
+                iconImage = R.drawable.ic_mic_none_white_48dp;
+                iconText = this.getResources().getString(R.string.action_transcribe);
+            } else {
+                iconImage = R.drawable.ic_stop_white_48dp;
+                iconText = this.getResources().getString(R.string.action_stop);
+            }
+
             // Create action for notification button
             NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
-                    android.R.drawable.ic_media_play,
-                    "Transcribe",
+                    iconImage,
+                    iconText,
                     transcribePendingIntent)
                     .build();
 
@@ -203,7 +215,7 @@ public class TranscribeService extends Service {
                     new NotificationCompat.Builder(this);
 
             mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
-//                .setOngoing(true)
+                    .setOngoing(dismissPref)
                     .setSmallIcon(R.drawable.ic_stat_milk)
                     .setTicker("ticker text")
                     .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))

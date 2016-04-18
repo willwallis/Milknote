@@ -42,8 +42,7 @@ public class DataUtility {
         String dateText = rightNow.get(Calendar.DAY_OF_MONTH) + " " +
                 rightNow.getDisplayName(Calendar.MONTH, Calendar.LONG, currentLocale) + ", " +
                 rightNow.get(Calendar.YEAR);
-        String timeText = rightNow.get(Calendar.HOUR) + ":" +
-                rightNow.get(Calendar.MINUTE) + " " +
+        String timeText = String.format("%02d:%02d", rightNow.get(Calendar.HOUR), rightNow.get(Calendar.MINUTE)) + " " +
                 rightNow.getDisplayName(Calendar.AM_PM, Calendar.LONG, currentLocale);
         String dayText = rightNow.getDisplayName(Calendar.DAY_OF_WEEK, Calendar.LONG, currentLocale);
         long rawTime = rightNow.getTimeInMillis();
