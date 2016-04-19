@@ -1,4 +1,4 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="@style/Theme.AppCompat.Light.NoActionBar">
@@ -9,6 +9,7 @@
         <item name="android:textColor">@color/primary_text</item>
         <item name="android:textColorSecondary">@color/icons</item>
         <item name="titleTextColor">@color/icons</item>
+        <item name="android:windowContentTransitions" tools:targetApi="lollipop">true</item>
         </style>
 
 </resources>

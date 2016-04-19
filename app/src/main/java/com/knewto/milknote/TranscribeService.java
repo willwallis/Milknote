@@ -195,12 +195,15 @@ public class TranscribeService extends Service {
             // select icon for action based on state
             int iconImage;
             String iconText;
-            if(state.equals(State.IDLE)){
-                iconImage = R.drawable.ic_mic_none_white_48dp;
-                iconText = this.getResources().getString(R.string.action_transcribe);
-            } else {
+            if(state.equals(State.LISTENING)){
                 iconImage = R.drawable.ic_stop_white_48dp;
                 iconText = this.getResources().getString(R.string.action_stop);
+            } else if(state.equals(State.PROCESSING)) {
+                iconImage = R.drawable.ic_autorenew_white_48dp;
+                iconText = this.getResources().getString(R.string.action_processing);
+            } else {
+                iconImage = R.drawable.ic_mic_white_48dp;
+                iconText = this.getResources().getString(R.string.action_transcribe);
             }
 
             // Create action for notification button
@@ -215,15 +218,16 @@ public class TranscribeService extends Service {
                     new NotificationCompat.Builder(this);
 
             mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
-                    .setOngoing(dismissPref)
                     .setSmallIcon(R.drawable.ic_stat_milk)
                     .setTicker("ticker text")
-                    .setStyle(new NotificationCompat.BigTextStyle().bigText("My BIG text"))
-                    .setContentTitle("Milknote")
+                    .setContentTitle(getResources().getString(R.string.app_name))
                     .setContentText(status)
                     .setPriority(Notification.PRIORITY_MAX)
-                    .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0))
-                    .addAction(recAction);
+                    .addAction(recAction)
+                    .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0));
+            if(dismissPref){
+                mBuilder.setOngoing(true);
+            }
 
             // Sets an ID for the notification
             int mNotificationId = 001;
@@ -371,19 +375,19 @@ public class TranscribeService extends Service {
         @Override
         public void onStartedRecording(Transaction transaction) {
             Log.v(TAG, "onStartedRecording");
-            broadcastStatus("Recording...");
             //We have started recording the users voice.
             //We should update our state and start polling their volume.
             setState(State.LISTENING);
+            broadcastStatus("Recording...");
         }
 
         @Override
         public void onFinishedRecording(Transaction transaction) {
             Log.v(TAG, "onFinishedRecording");
-            broadcastStatus("Processing...");
             //We have finished recording the users voice.
             //We should update our state and stop polling their volume.
             setState(State.PROCESSING);
+            broadcastStatus("Processing...");
         }
 
         @Override
@@ -397,20 +401,19 @@ public class TranscribeService extends Service {
         @Override
         public void onSuccess(Transaction transaction, String s) {
             Log.v(TAG, "onSuccess");
-            broadcastStatus("Success");
             locationHelper(STOP_LOCATION);
-            //Notification of a successful transaction. Nothing to do here.
+            broadcastStatus("Success");
         }
 
         @Override
         public void onError(Transaction transaction, String s, TransactionException e) {
             Log.v(TAG, "onError: " + e.getMessage() + ". " + s);
-            broadcastStatus("Failed");
             locationHelper(STOP_LOCATION);
             //Something went wrong. Check ConfigurationNuance.java to ensure that your settings are correct.
             //The user could also be offline, so be sure to handle this case appropriately.
             //We will simply reset to the idle state.
             setState(State.IDLE);
+            broadcastStatus("Failed");
         }
     };
 

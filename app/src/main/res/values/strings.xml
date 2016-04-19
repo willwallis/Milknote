@@ -13,6 +13,7 @@
     <!-- Notifications -->
     <string name="action_transcribe">Transcribe</string>
     <string name="action_stop">Stop</string>
+    <string name="action_processing">Processing</string>
 
     <!-- Folders -->
     <string name="default_note_folder">Main</string>
