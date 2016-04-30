@@ -147,6 +147,9 @@ public class LocationService extends Service {
         if (currentBestLocation == null) {
             // A new location is always better than no location
             return true;
+        } else if (location == null){
+            return false;
+            // A new false location is no good
         }
 
         // Check whether the new location fix is newer or older

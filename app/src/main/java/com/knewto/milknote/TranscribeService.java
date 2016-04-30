@@ -57,6 +57,7 @@ public class TranscribeService extends Service {
     private static final String ACTION_TRANSCRIBE = "com.knewto.milknote.action.TRANSCRIBE";
     private static final String ACTION_SETSTATE = "com.knewto.milknote.action.SETSTATE";
     private static final String ACTION_STATUS = "com.knewto.milknote.action.STATUS";
+    private static final String ACTION_CANCEL = "com.knewto.milknote.action.CANCEL";
 
     private final int RECOGNIZE = 100;
     private final int STOP = 200;
@@ -118,6 +119,7 @@ public class TranscribeService extends Service {
         if (intent != null && intent.getAction() != null) {
             String intentAction = intent.getAction();
             if (intentAction.equals(ACTION_TRANSCRIBE)) {
+                Log.v(TAG, "Received ACTION_TRANSCRIBE");
                 toggleReco();
             }
         }
@@ -176,42 +178,11 @@ public class TranscribeService extends Service {
         // Check preferences before creating notification
         SharedPreferences sharedPref = PreferenceManager.getDefaultSharedPreferences(this);
         boolean notificationPref = sharedPref.getBoolean(getString(R.string.pref_notification_key), true);
-        boolean dismissPref = sharedPref.getBoolean(getString(R.string.pref_dismiss_key), true);
+        boolean dismissPref = sharedPref.getBoolean(getString(R.string.pref_dismiss_key), false);
         if (notificationPref) {
 
             // Missing the notification activity
             // RESEARCH - creating artificial back stack
-
-            Intent transcribeIntent = new Intent(this, TranscribeService.class);
-            transcribeIntent.setAction(ACTION_TRANSCRIBE);
-            PendingIntent transcribePendingIntent =
-                    PendingIntent.getService(
-                            this,
-                            0,
-                            transcribeIntent,
-                            PendingIntent.FLAG_UPDATE_CURRENT
-                    );
-
-            // select icon for action based on state
-            int iconImage;
-            String iconText;
-            if(state.equals(State.LISTENING)){
-                iconImage = R.drawable.ic_stop_white_48dp;
-                iconText = this.getResources().getString(R.string.action_stop);
-            } else if(state.equals(State.PROCESSING)) {
-                iconImage = R.drawable.ic_autorenew_white_48dp;
-                iconText = this.getResources().getString(R.string.action_processing);
-            } else {
-                iconImage = R.drawable.ic_mic_white_48dp;
-                iconText = this.getResources().getString(R.string.action_transcribe);
-            }
-
-            // Create action for notification button
-            NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
-                    iconImage,
-                    iconText,
-                    transcribePendingIntent)
-                    .build();
 
             // Create the notification
             NotificationCompat.Builder mBuilder =
@@ -223,11 +194,51 @@ public class TranscribeService extends Service {
                     .setContentTitle(getResources().getString(R.string.app_name))
                     .setContentText(status)
                     .setPriority(Notification.PRIORITY_MAX)
-                    .addAction(recAction)
                     .setStyle(new NotificationCompat.MediaStyle().setShowActionsInCompactView(0));
+
+            // Make permanent if flag set
             if(dismissPref){
                 mBuilder.setOngoing(true);
             }
+
+            // Add action if not processing
+            // select icon for action based on state
+                int iconImage;
+                String iconText;
+                if (state.equals(State.LISTENING)) {
+                    iconImage = R.drawable.ic_stop_white_48dp;
+                    iconText = this.getResources().getString(R.string.action_stop);
+                } else if (state.equals(State.PROCESSING)){
+                    iconImage = R.drawable.ic_autorenew_white_48dp;
+                    iconText = this.getResources().getString(R.string.action_processing);
+                } else {
+                    iconImage = R.drawable.ic_mic_white_48dp;
+                    iconText = this.getResources().getString(R.string.action_transcribe);
+                }
+
+                Intent transcribeIntent = new Intent(this, TranscribeService.class);
+                // Cancelling recording not implemented in this version.
+                if(state.equals(State.PROCESSING)){
+                    transcribeIntent.setAction(ACTION_CANCEL);
+                }else {
+                    transcribeIntent.setAction(ACTION_TRANSCRIBE);
+                }
+                PendingIntent transcribePendingIntent =
+                        PendingIntent.getService(
+                                this,
+                                0,
+                                transcribeIntent,
+                                PendingIntent.FLAG_UPDATE_CURRENT
+                        );
+
+                // Create action for notification button
+                NotificationCompat.Action recAction = new NotificationCompat.Action.Builder(
+                        iconImage,
+                        iconText,
+                        transcribePendingIntent)
+                        .build();
+
+                mBuilder.addAction(recAction);
 
             // Sets an ID for the notification
             int mNotificationId = 001;

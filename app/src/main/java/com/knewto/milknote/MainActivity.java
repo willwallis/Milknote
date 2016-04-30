@@ -29,6 +29,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.util.Calendar;
+
 /**
  * Main Activity for Milknote
  * - displays list of notes
@@ -85,7 +87,6 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     // Setup Variables
     public String folderName;
     private Layout currentLayout;
-    private Boolean recordingFlag;
     private State state = State.IDLE;
 
      /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
@@ -112,14 +113,12 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
             folderName = savedInstanceState.getString("folder");
             state = (State)savedInstanceState.get("state");
             currentLayout = (Layout)savedInstanceState.get("layout");
-            recordingFlag = savedInstanceState.getBoolean("recording");
         }
         else {
             // Set new values
             folderName = getResources().getString(R.string.default_note_folder);
             state = State.IDLE;
             currentLayout = Layout.MAIN;
-            recordingFlag = false;
             // Check if navigated after trashing record, show snackbar
             Intent intent = getIntent();
             if (intent != null && intent.hasExtra("trashFlag")) {
@@ -200,6 +199,8 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         };
         mDrawerLayout.setDrawerListener(mDrawerToggle);
         // End navigation drawer
+
+        setState(state);
     }
 
     // Methods for Navigation Drawer
@@ -251,7 +252,6 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putSerializable("state", state);
-        outState.putBoolean("recording", recordingFlag);
         outState.putSerializable("layout", currentLayout);
         outState.putString("folder", folderName);
         super.onSaveInstanceState(outState);
@@ -417,29 +417,36 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     private void setState(State newState) {
         Log.v(TAG,"setState: " + newState);
         state = newState;
-        if(newState == State.LISTENING && recordingFlag == false){
+        if(newState.equals(State.LISTENING)){
             showRecordDialog();
-        } else if (newState != State.LISTENING && recordingFlag == true){
-            hideRecordDialog();
+            fabVisible(false);
+        } else if (newState.equals(State.PROCESSING)){
+            fabVisible(false);
+        } else {
+            fabVisible(true);
         }
     }
 
     // Shows recording dialog
     private void showRecordDialog(){
-        recordingFlag = true;
-        fabVisible(false);
+        Log.v(TAG, "showRecordDialog");
+        String fragmentName = "Dialog";
         recordDialog = new RecordDialogFragment();
-        recordDialog.show(getSupportFragmentManager(), "NoticeDialogFragment");
+        try {
+            recordDialog.show(getSupportFragmentManager(), fragmentName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Hides recording dialog
     private void hideRecordDialog() {
-        recordingFlag = false;
-        fabVisible(true);
+        Log.v(TAG, "hideRecordDialog");
         // Using this method to dismiss as it works after rotation
         FragmentTransaction ft = getFragmentManager().beginTransaction();
         Fragment prev = getFragmentManager().findFragmentByTag("NoticeDialogFragment");
         if (prev != null) {
+            Log.v(TAG, "removingRecordDialog");
             ft.remove(prev);
         }
         ft.addToBackStack(null);
