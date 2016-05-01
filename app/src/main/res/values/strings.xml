@@ -11,6 +11,9 @@
     <string name="add_widget">Add widget</string>
     <string name="record_button">REC</string>
 
+    <!-- Detail Fragment defaults -->
+    <string name="default_note_text">Error no note found</string>
+
     <!-- Content Descriptions -->
     <string name="cd_icon">Icon</string>
     <string name="cd_record_button">Record Button</string>
@@ -108,5 +111,8 @@
     </string-array>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
 
 </resources>

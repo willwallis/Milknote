@@ -2,6 +2,7 @@ package com.knewto.milknote;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
@@ -79,6 +80,44 @@ public class DataUtility {
         );
         return mNewUri;
     }
+
+    public static Cursor getNoteRecord(Context context, String noteId){
+        Cursor mCursor;
+
+        // A "projection" defines the columns that will be returned for each row
+        String[] mProjection =
+                {
+                        NoteContract.NoteEntry._ID,
+                        NoteContract.NoteEntry.COLUMN_NOTE_TEXT,
+                        NoteContract.NoteEntry.COLUMN_DATE_TEXT,
+                        NoteContract.NoteEntry.COLUMN_TIME_TEXT,
+                        NoteContract.NoteEntry.COLUMN_DAY_TEXT,
+                        NoteContract.NoteEntry.COLUMN_LOCATION_NAME,
+                        NoteContract.NoteEntry.COLUMN_FOLDER
+                };
+
+        // Defines a string to contain the selection clause
+        String mSelectionClause = NoteContract.NoteEntry._ID + " = ?";
+
+        // Initializes an array to contain selection arguments
+        String[] mSelectionArgs = {""};
+        mSelectionArgs[0] = noteId;
+
+        // Define sort order
+        String mSortOrder = NoteContract.NoteEntry._ID + " ASC";
+
+        // Does a query against the table and returns a Cursor object
+        mCursor = context.getContentResolver().query(
+                NoteContract.NoteEntry.CONTENT_URI,  // The content URI of the words table
+                mProjection,                       // The columns to return for each row
+                mSelectionClause,                   // Either null, or the word the user entered
+                mSelectionArgs,                    // Either empty, or the string the user entered
+                mSortOrder);                       // The sort order for the returned rows
+
+        return mCursor;
+    }
+
+
 
     public static String getLocationName(double lat, double lng, Context context, Locale currentLocale) {
         String locationName;

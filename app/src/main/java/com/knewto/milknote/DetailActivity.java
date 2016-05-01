@@ -2,28 +2,20 @@ package com.knewto.milknote;
 
 import android.content.Context;
 import android.content.Intent;
-import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
-import android.support.v4.view.MenuItemCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.ShareActionProvider;
 import android.support.v7.widget.Toolbar;
-import android.view.Gravity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.widget.ViewSwitcher;
 
 import com.google.android.gms.ads.AdRequest;
 import com.google.android.gms.ads.AdView;
+
+import com.knewto.milknote.DetailFragment.Layout;
 
 /**
  * Detail Activity
@@ -43,60 +35,33 @@ import com.google.android.gms.ads.AdView;
  */
 
 public class DetailActivity extends AppCompatActivity {
+
+    private static final String TAG = "DetailActivity";
+
     String noteID = "";
-    String noteText = "Error no note found";
-    String noteEditText = "";
-    String dateText = "";
-    String timeText = "";
-    String dayText = "";
-    String locationName = "";
     String folder = "";
 
-    String formattedTime;
-    String formattedDate;
-    String formattedLocation;
-
-    EditText vNoteEditText;
-    TextView vNoteText;
-    TextView vDayDate;
-    TextView vTimeText;
-    TextView vLocationName;
+    // Layout variables, uses enum from DetailFragment
+    private Layout currentLayout;
 
     private ShareActionProvider mShareActionProvider;
 
-    private Layout currentLayout;
-    private enum Layout {
-        READ,
-        EDIT,
-        RESTORE
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_detail);
-        // Map variables to text views
-        mapViews();
 
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
             currentLayout = (Layout)savedInstanceState.get("layout");
             noteID = savedInstanceState.getString("noteID");
-            noteText = savedInstanceState.getString("noteText");
-            noteEditText = savedInstanceState.getString("noteEditText");
-            formattedDate = savedInstanceState.getString("formattedDate");
-            formattedTime = savedInstanceState.getString("formattedTime");
-            formattedLocation = savedInstanceState.getString("formattedLocation");
-            folder = savedInstanceState.getString("folder");
             if (currentLayout.equals(Layout.EDIT)){
                 // Set up the edit view
-                ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
-                switcher.showNext(); // viewswitcher swaps textview for edittextview
-                vNoteEditText.requestFocus(); // Focuses on edit text
-                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
-                imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
+//                InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+//                imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
             } else if (currentLayout.equals(Layout.RESTORE)){
                 // Any changes for restore mode
             }
@@ -106,7 +71,8 @@ public class DetailActivity extends AppCompatActivity {
             // Get values from intent and load fields
             Intent intent = getIntent();
             if (intent != null && intent.hasExtra("NoteText")) {
-                loadIntent(intent);
+                noteID = intent.getStringExtra("ID");
+                folder = intent.getStringExtra("Folder");
             }
             // Set layout based on whether record is in Trash
             if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
@@ -116,13 +82,20 @@ public class DetailActivity extends AppCompatActivity {
             }
         }
 
-        // Set view text to intent variables
-        setViewText();
-
-        // Load Ad
-        AdView mAdView = (AdView) findViewById(R.id.adView);
-        AdRequest adRequest = new AdRequest.Builder().build();
-        mAdView.loadAd(adRequest);
+        // Insert fragment
+        if (findViewById(R.id.detail_fragment) != null) {
+            if (savedInstanceState != null) {} else {
+                DetailFragment detailFragment = new DetailFragment();
+                // Set folder to load.
+                Bundle data = new Bundle();
+                data.putString("noteID", noteID);
+                Log.v(TAG, currentLayout.name());
+                data.putSerializable("layout", currentLayout);
+                detailFragment.getArguments().putBundle("note_data", data);
+                getSupportFragmentManager().beginTransaction()
+                        .add(R.id.detail_fragment, detailFragment).commit();
+            }
+        }
 
         // Create toolbar
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar); // Attaching the layout to the toolbar object
@@ -137,6 +110,11 @@ public class DetailActivity extends AppCompatActivity {
         });
         getSupportActionBar().setTitle("");
 
+        // Load Ad
+        AdView mAdView = (AdView) findViewById(R.id.adView);
+        AdRequest adRequest = new AdRequest.Builder().build();
+        mAdView.loadAd(adRequest);
+
     }
 
     @Override
@@ -145,11 +123,6 @@ public class DetailActivity extends AppCompatActivity {
         switch(currentLayout){
             case READ:
                 getMenuInflater().inflate(R.menu.menu_detail_text, menu);
-                // Locate MenuItem with ShareActionProvider
-                MenuItem item = menu.findItem(R.id.menu_item_share);
-                // Fetch and store ShareActionProvider
-                mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
-                setShareIntent();
                 break;
             case EDIT:
                 getMenuInflater().inflate(R.menu.menu_detail_edit, menu);
@@ -159,18 +132,6 @@ public class DetailActivity extends AppCompatActivity {
                 break;
         }
         return true;
-    }
-
-    // Call to update the share intent
-    private void setShareIntent() {
-        if (mShareActionProvider != null) {
-            Intent shareIntent = new Intent(Intent.ACTION_SEND);
-            shareIntent.setType("text/plain");
-            shareIntent.putExtra(Intent.EXTRA_TEXT, noteText);
-            String subjectLine = "Note from: " + dateText;
-            shareIntent.putExtra(Intent.EXTRA_SUBJECT, subjectLine);
-            mShareActionProvider.setShareIntent(shareIntent);
-        }
     }
 
     @Override
@@ -201,77 +162,42 @@ public class DetailActivity extends AppCompatActivity {
     protected void onSaveInstanceState(Bundle outState) {
         outState.putSerializable("layout", currentLayout);
         outState.putString("noteID", noteID);
-        outState.putString("noteText", noteText);
-        outState.putString("noteEditText", noteEditText);
-        outState.putString("formattedDate", formattedDate);
-        outState.putString("formattedTime", formattedTime);
-        outState.putString("formattedLocation", formattedLocation);
-        outState.putString("folder", folder);
         super.onSaveInstanceState(outState);
-    }
-
-    // Method to map fields in view
-    private void mapViews(){
-        vNoteText = (TextView) findViewById(R.id.noteText);
-        vDayDate =  (TextView) findViewById(R.id.dayDateText);
-        vTimeText = (TextView) findViewById(R.id.timeText);
-        vLocationName = (TextView) findViewById(R.id.locationName);
-        vNoteEditText = (EditText) findViewById(R.id.noteEditText);
-    }
-
-    // Method to load fields from intent
-    private void loadIntent(Intent intent){
-        noteID = intent.getStringExtra("ID");
-        noteText = intent.getStringExtra("NoteText");
-        dateText = intent.getStringExtra("DateText");
-        timeText = intent.getStringExtra("TimeText");
-        dayText = intent.getStringExtra("DayText");
-        locationName = intent.getStringExtra("LocationName");
-        folder = intent.getStringExtra("Folder");
-        formattedTime = getString(R.string.label_time) +  " " + timeText;
-        formattedDate = getString(R.string.label_date) +  " " + dayText + " - " + dateText;
-        formattedLocation = getString(R.string.label_location) + " " + locationName;
-    }
-
-    // Method to set view text values to variables values
-    private void setViewText(){
-        vNoteText.setText(noteText);
-        vNoteEditText.setText(noteText);
-        vDayDate.setText(formattedDate);
-        vTimeText.setText(formattedTime);
-        vLocationName.setText(formattedLocation);
     }
 
     // METHODS FOR BUTTON
     private void editRecord(){
-        ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
-        switcher.showNext(); // viewswitcher swaps textview for edittextview
-        vNoteEditText.requestFocus(); // Focuses on edit text
         currentLayout = Layout.EDIT; // Sets variable to indicate which actions to show
+        switchFragment(currentLayout);
         invalidateOptionsMenu(); // Reset menu to display correct buttons
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
     }
 
     private void saveRecord(){
-        String modified_text = vNoteEditText.getText().toString(); // Get new values
-        vNoteText.setText(modified_text); // Set read text to new value
-        noteText = modified_text; // set value to new value for rotate
-        // Update the content provider
-        int numberUpdate = DataUtility.updateRecord(getApplicationContext(), noteID, modified_text);
-        String recordUpdateYes = getString(R.string.records_updated) + " " + numberUpdate;
-        // Switch back to read only mode
-        ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
-        switcher.showPrevious(); //or switcher.showPrevious();
         currentLayout = Layout.READ;
+        switchFragment(currentLayout);
         invalidateOptionsMenu();
         // Hide soft keyboard
         View view = this.getCurrentFocus();
         if (view != null) {
             InputMethodManager imm = (InputMethodManager)getSystemService(Context.INPUT_METHOD_SERVICE);
             imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
-            }
         }
+    }
+
+    // Refresh list fragment if folder changes
+    private void switchFragment(Layout currentLayout) {
+        int layoutFlag = 0;
+        if(currentLayout == Layout.EDIT){
+            layoutFlag = 1;
+        }
+        DetailFragment detailFragment = (DetailFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.detail_fragment);
+        if (detailFragment != null) {
+            detailFragment.viewSwitcher(layoutFlag);
+        }
+    }
 
 
     private void trashRecord(){
