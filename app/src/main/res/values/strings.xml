@@ -9,15 +9,24 @@
     <string name="appwidget_text">Widget</string>
     <string name="widget_layout_text">LaYOUT</string>
     <string name="add_widget">Add widget</string>
+    <string name="record_button">REC</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_icon">Icon</string>
+    <string name="cd_record_button">Record Button</string>
 
     <!-- Status Messages -->
     <string name="message_warming_up">Warming Up</string>
     <string name="message_ready">Ready to record</string>
-    <string name="message_recording">Recording...</string>
-    <string name="message_processing">Processing...</string>
+    <string name="message_recording">Recording&#8230;</string>
+    <string name="message_processing">Processing&#8230;</string>
     <string name="message_success">Ready to record again</string>
     <string name="message_failure">Error, please try again</string>
 
+    <!-- Detail labels -->
+    <string name="label_time">Time:</string>
+    <string name="label_date">Date:</string>
+    <string name="label_location">Location:</string>
 
     <!-- Notifications -->
     <string name="action_transcribe">Transcribe</string>
@@ -30,6 +39,9 @@
     <string name="trash_note_folder">trash</string>
     <string name="trash_note_display">Trash</string>
     <string name="no_records">"No notes. Click microphone to transcribe your first note."</string>
+    <string name="records_updated">Records updated:</string>
+    <string name="records_trashed">Records trashed:</string>
+    <string name="records_restored">Records restored:</string>
 
     <!--Button Labels-->
     <string name="edit_button_label">Edit</string>

@@ -52,9 +52,9 @@ public class DetailActivity extends AppCompatActivity {
     String locationName = "";
     String folder = "";
 
-    String formattedTime = "Time: ";
-    String formattedDate = "Date: ";
-    String formattedLocation = "Location: ";
+    String formattedTime;
+    String formattedDate;
+    String formattedLocation;
 
     EditText vNoteEditText;
     TextView vNoteText;
@@ -243,9 +243,9 @@ public class DetailActivity extends AppCompatActivity {
         dayText = intent.getStringExtra("DayText");
         locationName = intent.getStringExtra("LocationName");
         folder = intent.getStringExtra("Folder");
-        formattedTime = "Time: " + timeText;
-        formattedDate = "Date: " + dayText + " - " + dateText;
-        formattedLocation = "Location: " + locationName;
+        formattedTime = getString(R.string.label_time) +  " " + timeText;
+        formattedDate = getString(R.string.label_date) +  " " + dayText + " - " + dateText;
+        formattedLocation = getString(R.string.label_location) + " " + locationName;
     }
 
     // Method to set view text values to variables values
@@ -275,7 +275,7 @@ public class DetailActivity extends AppCompatActivity {
         noteText = modified_text; // set value to new value for rotate
         // Update the content provider
         int numberUpdate = DataUtility.updateRecord(getApplicationContext(), noteID, modified_text);
-        String recordUpdateYes = "Records updated: " + numberUpdate;
+        String recordUpdateYes = getString(R.string.records_updated) + " " + numberUpdate;
         // Switch back to read only mode
         ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
         switcher.showPrevious(); //or switcher.showPrevious();
@@ -294,7 +294,7 @@ public class DetailActivity extends AppCompatActivity {
     private void trashRecord(){
         String trashFolder = this.getResources().getString(R.string.trash_note_folder);
         int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, trashFolder);
-        String recordUpdateYes = "Records trashed: " + numberUpdate;
+        String recordUpdateYes = getString(R.string.records_trashed) + " " + numberUpdate;
         // Navigate to Detail View & Show snack bar on detail view
         Intent mainIntent = new Intent(this, MainActivity.class);
         mainIntent.putExtra("trashFlag", 1);
@@ -305,7 +305,7 @@ public class DetailActivity extends AppCompatActivity {
     private void restoreRecord(){
         String defaultFolder = this.getResources().getString(R.string.default_note_folder);
         int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, defaultFolder);
-        String recordUpdateYes = "Records restored: " + numberUpdate;
+        String recordUpdateYes = getString(R.string.records_restored) + " " + numberUpdate;
         currentLayout = Layout.READ;
         invalidateOptionsMenu();
         fabVisible(true);

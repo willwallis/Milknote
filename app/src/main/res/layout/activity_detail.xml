@@ -26,10 +26,7 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:transitionName="item"
-            android:paddingBottom="@dimen/activity_vertical_margin"
-            android:paddingLeft="@dimen/activity_horizontal_margin"
-            android:paddingRight="@dimen/activity_horizontal_margin"
-            android:paddingTop="@dimen/activity_vertical_margin"
+            android:padding="@dimen/activity_vertical_margin"
             android:orientation="vertical"
             tools:context="com.knewto.milknote.DetailActivity">
 
@@ -39,19 +36,19 @@
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:id="@+id/timeText"
-                android:text="Time Text" />
+                android:text="@string/label_time" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="4dp"
                 android:id="@+id/dayDateText"
-                android:text="Day Date Text" />
+                android:text="@string/label_date" />
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
                 android:id="@+id/locationName"
-                android:text="Location Name" />
+                android:text="@string/label_location" />
 
             <View
                 android:layout_width="match_parent"
@@ -107,6 +104,7 @@
         android:layout_height="wrap_content"
         android:layout_gravity="end|bottom"
         android:layout_margin="16dp"
+        android:contentDescription="@string/cd_record_button"
         android:src="@drawable/ic_create_white_48dp" />
 
 </android.support.design.widget.CoordinatorLayout>

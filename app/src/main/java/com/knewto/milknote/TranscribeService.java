@@ -200,7 +200,7 @@ public class TranscribeService extends Service {
 
             mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
                     .setSmallIcon(R.drawable.ic_stat_milk)
-                    .setTicker("ticker text")
+                    .setTicker(getString(R.string.app_name))
                     .setContentIntent(appPendingIntent)
                     .setContentTitle(getResources().getString(R.string.app_name))
                     .setContentText(status)

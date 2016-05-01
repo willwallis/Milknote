@@ -41,7 +41,8 @@
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
-        android:text="REC"
+        android:contentDescription="@string/cd_record_button"
+        android:text="@string/record_button"
         android:layout_centerHorizontal="true" />
 
 </LinearLayout>
