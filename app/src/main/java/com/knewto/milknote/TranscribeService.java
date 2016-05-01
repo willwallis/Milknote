@@ -113,7 +113,7 @@ public class TranscribeService extends Service {
     public int onStartCommand(Intent intent, int flags, int startId) {
         Log.v(TAG, "onStartCommand");
 
-        makeNotification("Ready to record");
+        broadcastStatus(getString(R.string.message_ready));
 
         // Process requests from Notifications
         if (intent != null && intent.getAction() != null) {
@@ -158,7 +158,7 @@ public class TranscribeService extends Service {
         sendStatusIntent.putExtra("Status", status);
         LocalBroadcastManager.getInstance(this).sendBroadcast(sendStatusIntent);
         makeNotification(status);
-        //updateWidget(status);
+        updateWidget(status);
     }
 
     // Update App Widget
@@ -166,9 +166,9 @@ public class TranscribeService extends Service {
         Log.v(TAG, "updateWidget");
         Intent intent = new Intent(this, MilknoteAppWidget.class);
         intent.setAction("android.appwidget.action.APPWIDGET_UPDATE");
-        int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
+//        int ids[] = AppWidgetManager.getInstance(getApplication()).getAppWidgetIds(new ComponentName(getApplication(), MilknoteAppWidget.class));
         intent.putExtra("Status", status);
-        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
+//        intent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_IDS, ids);
         sendBroadcast(intent);
     }
 
@@ -184,6 +184,16 @@ public class TranscribeService extends Service {
             // Missing the notification activity
             // RESEARCH - creating artificial back stack
 
+            // Pending intent to open the MainActivity
+            Intent appIntent = new Intent(this, MainActivity.class);
+            PendingIntent appPendingIntent =
+                PendingIntent.getActivity(
+                        this,
+                        0,
+                        appIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+
             // Create the notification
             NotificationCompat.Builder mBuilder =
                     new NotificationCompat.Builder(this);
@@ -191,6 +201,7 @@ public class TranscribeService extends Service {
             mBuilder.setVisibility(Notification.VISIBILITY_PUBLIC)
                     .setSmallIcon(R.drawable.ic_stat_milk)
                     .setTicker("ticker text")
+                    .setContentIntent(appPendingIntent)
                     .setContentTitle(getResources().getString(R.string.app_name))
                     .setContentText(status)
                     .setPriority(Notification.PRIORITY_MAX)
@@ -389,7 +400,7 @@ public class TranscribeService extends Service {
             //We have started recording the users voice.
             //We should update our state and start polling their volume.
             setState(State.LISTENING);
-            broadcastStatus("Recording...");
+            broadcastStatus(getString(R.string.message_recording));
         }
 
         @Override
@@ -398,7 +409,7 @@ public class TranscribeService extends Service {
             //We have finished recording the users voice.
             //We should update our state and stop polling their volume.
             setState(State.PROCESSING);
-            broadcastStatus("Processing...");
+            broadcastStatus(getString(R.string.message_processing));
         }
 
         @Override
@@ -413,7 +424,7 @@ public class TranscribeService extends Service {
         public void onSuccess(Transaction transaction, String s) {
             Log.v(TAG, "onSuccess");
             locationHelper(STOP_LOCATION);
-            broadcastStatus("Success");
+            broadcastStatus(getString(R.string.message_success));
         }
 
         @Override
@@ -424,7 +435,7 @@ public class TranscribeService extends Service {
             //The user could also be offline, so be sure to handle this case appropriately.
             //We will simply reset to the idle state.
             setState(State.IDLE);
-            broadcastStatus("Failed");
+            broadcastStatus(getString(R.string.message_failure));
         }
     };
 

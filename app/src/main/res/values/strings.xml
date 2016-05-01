@@ -10,6 +10,15 @@
     <string name="widget_layout_text">LaYOUT</string>
     <string name="add_widget">Add widget</string>
 
+    <!-- Status Messages -->
+    <string name="message_warming_up">Warming Up</string>
+    <string name="message_ready">Ready to record</string>
+    <string name="message_recording">Recording...</string>
+    <string name="message_processing">Processing...</string>
+    <string name="message_success">Ready to record again</string>
+    <string name="message_failure">Error, please try again</string>
+
+
     <!-- Notifications -->
     <string name="action_transcribe">Transcribe</string>
     <string name="action_stop">Stop</string>
