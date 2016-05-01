@@ -22,6 +22,7 @@
     <string name="message_processing">Processing&#8230;</string>
     <string name="message_success">Ready to record again</string>
     <string name="message_failure">Error, please try again</string>
+    <string name="message_no_network">Network unavailable, try again later</string>
 
     <!-- Detail labels -->
     <string name="label_time">Time:</string>
@@ -89,14 +90,14 @@
 
     <!-- All of the possible tile background colors -->
     <array name="letter_tile_colors">
-        <item>#f16364</item>
-        <item>#f58559</item>
-        <item>#f9a43e</item>
-        <item>#e4c62e</item>
-        <item>#67bf74</item>
-        <item>#59a2be</item>
-        <item>#2093cd</item>
-        <item>#ad62a7</item>
+        <item>#0277BD</item>
+        <item>#B3E5FC</item>
+        <item>#81D4FA</item>
+        <item>#4FC3F7</item>
+        <item>#29B6F6</item>
+        <item>#03A9F4</item>
+        <item>#039BE5</item>
+        <item>#0288D1</item>
     </array>
 
     <!-- Nav Drawer -->

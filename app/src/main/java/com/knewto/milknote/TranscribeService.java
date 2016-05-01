@@ -4,7 +4,6 @@ import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
-import android.appwidget.AppWidgetManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -13,12 +12,15 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.NotificationCompat;
 import android.util.Log;
+import android.widget.Toast;
 
 import com.nuance.speechkit.Audio;
 import com.nuance.speechkit.DetectionType;
@@ -363,6 +365,7 @@ public class TranscribeService extends Service {
 
     private void toggleReco() {
         Log.v(TAG, "toggleReco");
+        if(isOnline()){
         switch (state) {
             case IDLE:
                 recognize();
@@ -374,7 +377,18 @@ public class TranscribeService extends Service {
             case PROCESSING:
                 cancel();
                 break;
+        }}
+        else {
+            Toast.makeText(getApplicationContext(), getString(R.string.message_no_network), Toast.LENGTH_SHORT).show();
         }
+    }
+
+    // Check for network before doing anything
+    public boolean isOnline() {
+        ConnectivityManager cm =
+                (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnectedOrConnecting();
     }
 
     /**
