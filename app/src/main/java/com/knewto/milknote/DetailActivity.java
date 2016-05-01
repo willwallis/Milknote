@@ -62,10 +62,6 @@ public class DetailActivity extends AppCompatActivity {
     TextView vTimeText;
     TextView vLocationName;
 
-    // FAB Variables
-    FloatingActionButton fab;
-    CoordinatorLayout.LayoutParams originalParams;
-
     private ShareActionProvider mShareActionProvider;
 
     private Layout currentLayout;
@@ -83,16 +79,6 @@ public class DetailActivity extends AppCompatActivity {
         // Map variables to text views
         mapViews();
 
-        // FAB button that starts editing
-        fab = (FloatingActionButton)findViewById(R.id.fab);
-        originalParams = (CoordinatorLayout.LayoutParams) fab.getLayoutParams();
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                editRecord();
-            }
-        });
-
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
@@ -109,12 +95,10 @@ public class DetailActivity extends AppCompatActivity {
                 ViewSwitcher switcher = (ViewSwitcher) findViewById(R.id.my_switcher);
                 switcher.showNext(); // viewswitcher swaps textview for edittextview
                 vNoteEditText.requestFocus(); // Focuses on edit text
-                fabVisible(false); // Hide the FAB
                 InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
                 imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
             } else if (currentLayout.equals(Layout.RESTORE)){
-                // Make Restore view changes
-                fabVisible(false);
+                // Any changes for restore mode
             }
         }
         else {
@@ -127,7 +111,6 @@ public class DetailActivity extends AppCompatActivity {
             // Set layout based on whether record is in Trash
             if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
                 currentLayout = Layout.RESTORE;
-                fabVisible(false);
             } else {
                 currentLayout = Layout.READ;
             }
@@ -202,7 +185,9 @@ public class DetailActivity extends AppCompatActivity {
             case R.id.action_restore:
                 restoreRecord();
                 return true;
-
+            case R.id.action_edit:
+                editRecord();
+                return true;
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.
@@ -264,7 +249,6 @@ public class DetailActivity extends AppCompatActivity {
         vNoteEditText.requestFocus(); // Focuses on edit text
         currentLayout = Layout.EDIT; // Sets variable to indicate which actions to show
         invalidateOptionsMenu(); // Reset menu to display correct buttons
-        fabVisible(false); // Hide the FAB
         InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
         imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
     }
@@ -281,7 +265,6 @@ public class DetailActivity extends AppCompatActivity {
         switcher.showPrevious(); //or switcher.showPrevious();
         currentLayout = Layout.READ;
         invalidateOptionsMenu();
-        fabVisible(true);
         // Hide soft keyboard
         View view = this.getCurrentFocus();
         if (view != null) {
@@ -308,22 +291,5 @@ public class DetailActivity extends AppCompatActivity {
         String recordUpdateYes = getString(R.string.records_restored) + " " + numberUpdate;
         currentLayout = Layout.READ;
         invalidateOptionsMenu();
-        fabVisible(true);
-    }
-
-    // Set FAB visible or invisible
-    private void fabVisible(Boolean visible){
-        if(visible){
-            // display FAB
-            fab.setLayoutParams(originalParams);
-            fab.setVisibility(View.VISIBLE);
-        }
-        else {
-            //hide FAB
-            CoordinatorLayout.LayoutParams currentLayoutParams = originalParams;
-            currentLayoutParams.setAnchorId(View.NO_ID);
-            fab.setLayoutParams(currentLayoutParams);
-            fab.setVisibility(View.GONE);
-        }
     }
 }

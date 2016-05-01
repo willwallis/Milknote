@@ -98,15 +98,6 @@
 
     </android.support.design.widget.AppBarLayout>
 
-    <android.support.design.widget.FloatingActionButton
-        android:id="@+id/fab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="end|bottom"
-        android:layout_margin="16dp"
-        android:contentDescription="@string/cd_record_button"
-        android:src="@drawable/ic_create_white_48dp" />
-
 </android.support.design.widget.CoordinatorLayout>
 
     <com.google.android.gms.ads.AdView
