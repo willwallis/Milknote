@@ -114,7 +114,9 @@ public class DetailFragment extends Fragment {
             // Restore value of members from saved state
             noteEditText = savedInstanceState.getString("noteEditText");
             currentLayout = (Layout)savedInstanceState.get("layout");
+            noteID = savedInstanceState.getString("noteID");
         }
+        Log.v(TAG, "onCreate _ID: " + noteID);
 
         // Add Share Action Provider to Toolbar
         setHasOptionsMenu(true);
@@ -131,9 +133,10 @@ public class DetailFragment extends Fragment {
 
         // Get values from bundle
         Bundle data = this.getArguments().getBundle("note_data");
-        noteID = data.getString("noteID", "");
+        if(noteID == null){
+            noteID = data.getString("noteID", "");}
         if(currentLayout == null){
-        currentLayout = (Layout)data.get("layout");}
+            currentLayout = (Layout)data.get("layout");}
         queryData();
 
         // Set to edit mode if Layout is edit
@@ -145,6 +148,13 @@ public class DetailFragment extends Fragment {
         setViewText();
 
         return view;
+    }
+
+    public void loadNote(String newNoteId){
+        Log.v(TAG, "loadNote _ID: " + newNoteId);
+        noteID = newNoteId;
+        queryData();
+        setViewText();
     }
 
     @Override
@@ -204,6 +214,8 @@ public class DetailFragment extends Fragment {
         super.onSaveInstanceState(outState);
         outState.putString("noteEditText", noteEditText);
         outState.putSerializable("layout", currentLayout);
+        outState.putString("noteID", noteID);
+        Log.v(TAG, "onSaveInstanceState _ID: " + noteID);
     }
 
     // Method to map fields in view
@@ -217,6 +229,7 @@ public class DetailFragment extends Fragment {
 
     // Get Field Values
     private void queryData(){
+        Log.v(TAG, "queryData _ID: " + noteID);
         Cursor mCursor = DataUtility.getNoteRecord(getActivity(), noteID);
 
         int indexText = mCursor.getColumnIndex(NoteContract.NoteEntry.COLUMN_NOTE_TEXT);
@@ -241,17 +254,22 @@ public class DetailFragment extends Fragment {
                 locationName = mCursor.getString(indexLocation);
                 folder = mCursor.getString(indexFolder);
 
-                formattedTime = getString(R.string.label_time) +  " " + timeText;
-                formattedDate = getString(R.string.label_date) +  " " + dayText + " - " + dateText;
-                formattedLocation = getString(R.string.label_location) + " " + locationName;
+                formattedTime = timeText;
+                formattedDate = dayText + " - " + dateText;
+                formattedLocation = locationName;
             }
         } else {
             // Insert code here to report an error if the cursor is null or the provider threw an exception.
             noteText = "";
-            formattedTime = getString(R.string.label_time);
-            formattedDate = getString(R.string.label_date);
-            formattedLocation = getString(R.string.label_location);
+            formattedTime = "";
+            formattedDate = "";
+            formattedLocation = "";
         }
+        if(formattedTime == null){formattedTime = "";}
+        if(formattedDate == null){formattedDate = "";}
+        if(formattedLocation == null){formattedLocation = "";}
+
+        setShareIntent(noteText);
     }
 
 
@@ -259,9 +277,9 @@ public class DetailFragment extends Fragment {
     private void setViewText(){
         vNoteText.setText(noteText);
         vNoteEditText.setText(noteText);
-        vDayDate.setText(formattedDate);
-        vTimeText.setText(formattedTime);
-        vLocationName.setText(formattedLocation);
+        vDayDate.setText(getString(R.string.label_date) +  " " + formattedDate);
+        vTimeText.setText(getString(R.string.label_time) +  " " + formattedTime);
+        vLocationName.setText(getString(R.string.label_location) + " " + formattedLocation);
     }
 
     // View switcher - 0 is read, 1 is edit

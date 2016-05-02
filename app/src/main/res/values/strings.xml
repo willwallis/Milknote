@@ -3,6 +3,7 @@
     <string name="app_name">Milknote</string>
     <string name="content_authority">com.knewto.milknote.app</string>
     <string name="pref_main_text">pref_main_text</string>
+    <string name="pref_two_pane">pref_two_pane</string>
     <string name="banner_ad_unit_id">ca-app-pub-3940256099942544/6300978111</string>
 
     <!-- Widget -->

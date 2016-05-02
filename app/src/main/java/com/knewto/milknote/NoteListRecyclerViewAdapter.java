@@ -105,19 +105,13 @@ public class NoteListRecyclerViewAdapter extends RecyclerView.Adapter<NoteListRe
         public void onClick(View v) {
             int adapterPosition = getAdapterPosition();
             mCursor.moveToPosition(adapterPosition);
-            Intent detailIntent = new Intent(mContext, DetailActivity.class);
-            detailIntent.putExtra("ID", mCursor.getString(NoteListFragment.COL_NOTE_ID));
-            detailIntent.putExtra("NoteText", mCursor.getString(NoteListFragment.COL_NOTE_TEXT));
-            detailIntent.putExtra("DateText", mCursor.getString(NoteListFragment.COL_DATE_TEXT));
-            detailIntent.putExtra("TimeText", mCursor.getString(NoteListFragment.COL_TIME_TEXT));
-            detailIntent.putExtra("DayText", mCursor.getString(NoteListFragment.COL_DAY_TEXT));
-            detailIntent.putExtra("RawTime", mCursor.getString(NoteListFragment.COL_RAW_TIME));
-            detailIntent.putExtra("CoordLat", mCursor.getString(NoteListFragment.COL_LAT));
-            detailIntent.putExtra("CoordLong", mCursor.getString(NoteListFragment.COL_LONG));
-            detailIntent.putExtra("LocationName", mCursor.getString(NoteListFragment.COL_LOCATION_NAME));
-            detailIntent.putExtra("Folder", mCursor.getString(NoteListFragment.COL_FOLDER));
-            detailIntent.putExtra("Edited", mCursor.getString(NoteListFragment.COL_EDIT_FLAG));
-            mContext.startActivity(detailIntent);
+            String newNoteId =  mCursor.getString(NoteListFragment.COL_NOTE_ID);
+            String newFolder = mCursor.getString(NoteListFragment.COL_FOLDER);
+
+            // Call MainActivity method to update fragment or start Detail Activity
+            if(mContext instanceof MainActivity){
+                ((MainActivity)mContext).refreshDetailFragment(newNoteId, newFolder, 1);
+            }
 
         }
     }

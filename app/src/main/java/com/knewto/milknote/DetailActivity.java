@@ -70,7 +70,7 @@ public class DetailActivity extends AppCompatActivity {
             // First Load
             // Get values from intent and load fields
             Intent intent = getIntent();
-            if (intent != null && intent.hasExtra("NoteText")) {
+            if (intent != null && intent.hasExtra("ID")) {
                 noteID = intent.getStringExtra("ID");
                 folder = intent.getStringExtra("Folder");
             }

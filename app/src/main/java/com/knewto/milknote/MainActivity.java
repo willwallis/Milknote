@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.support.design.widget.CoordinatorLayout;
@@ -29,7 +30,8 @@ import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 
-import java.util.Calendar;
+import com.google.android.gms.ads.AdRequest;
+import com.google.android.gms.ads.AdView;
 
 /**
  * Main Activity for Milknote
@@ -60,7 +62,7 @@ import java.util.Calendar;
  * - refreshFragment: reloads fragment when user picks main notes or trash in drawer
  */
 
-public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener{
+public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener, NoteListFragment.OnRecordsSelectedListener {
 
     private static final String TAG = "MainActivity";
     private IntentFilter setStateFilter;
@@ -85,9 +87,12 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     CoordinatorLayout.LayoutParams originalParams;
 
     // Setup Variables
+    private String noteId;
     public String folderName;
-    private Layout currentLayout;
+    private MainLayout currentMainLayout;
+    private DetailFragment.Layout currentLayout;
     private State state = State.IDLE;
+    private boolean twoPane;
 
      /* State Logic: IDLE -> LISTENING -> PROCESSING -> repeat */
     private enum State {
@@ -96,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         PROCESSING
     }
 
-    private enum Layout {
+    private enum MainLayout {
         MAIN,
         TRASH
     }
@@ -104,21 +109,40 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // Determine if two pane layout
+        Configuration config = getResources().getConfiguration();
+        if (config.smallestScreenWidthDp >= 600) {
+            twoPane = true;
+            SharedPreferences sharedPref = getPreferences(Context.MODE_PRIVATE);
+            SharedPreferences.Editor editor = sharedPref.edit();
+            editor.putBoolean(getString(R.string.pref_two_pane), twoPane);
+            editor.commit();
+        }
+        else {
+            twoPane = false;
+        }
+
+        ///// TO BE FIXED
+        currentLayout = DetailFragment.Layout.READ;
+
+
         // Set layout template
         setContentView(R.layout.activity_main_material);
 
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
             // Restore value of members from saved state
+            noteId = savedInstanceState.getString("noteId");
             folderName = savedInstanceState.getString("folder");
             state = (State)savedInstanceState.get("state");
-            currentLayout = (Layout)savedInstanceState.get("layout");
+            currentMainLayout = (MainLayout)savedInstanceState.get("layout");
         }
         else {
             // Set new values
             folderName = getResources().getString(R.string.default_note_folder);
+            noteId = "o0";
             state = State.IDLE;
-            currentLayout = Layout.MAIN;
+            currentMainLayout = MainLayout.MAIN;
             // Check if navigated after trashing record, show snackbar
             Intent intent = getIntent();
             if (intent != null && intent.hasExtra("trashFlag")) {
@@ -139,6 +163,29 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
                 noteListFragment.getArguments().putBundle("folder_data", data);
                 getSupportFragmentManager().beginTransaction()
                         .add(R.id.notelist_fragment, noteListFragment).commit();
+            }
+        }
+
+        // Add two pane elements
+        if(twoPane){
+            // Load Ad
+            AdView mAdView = (AdView) findViewById(R.id.adView);
+            AdRequest adRequest = new AdRequest.Builder().build();
+            mAdView.loadAd(adRequest);
+
+            // Insert fragment
+            if (findViewById(R.id.detail_fragment) != null) {
+                if (savedInstanceState != null) {} else {
+                    DetailFragment detailFragment = new DetailFragment();
+                    // Set folder to load.
+                    Bundle data = new Bundle();
+                    data.putString("noteID", noteId);
+                    Log.v(TAG, currentLayout.name());
+                    data.putSerializable("layout", currentLayout);
+                    detailFragment.getArguments().putBundle("note_data", data);
+                    getSupportFragmentManager().beginTransaction()
+                            .add(R.id.detail_fragment, detailFragment).commit();
+                }
             }
         }
 
@@ -212,12 +259,12 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
             switch(position){
                 case MAINNOTE:
                     folderName = getResources().getString(R.string.default_note_folder);
-                    currentLayout = Layout.MAIN;
+                    currentMainLayout = MainLayout.MAIN;
                     refreshFragment();
                     break;
                 case TRASHNOTE:
                     folderName = getResources().getString(R.string.trash_note_folder);
-                    currentLayout = Layout.TRASH;
+                    currentMainLayout = MainLayout.TRASH;
                     refreshFragment();
                     break;
                 case SETTINGS:
@@ -248,12 +295,35 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         }
     }
 
+    // Refresh detail Fragment
+    public void refreshDetailFragment(String newNoteId, String newFolderName, int sourceCode) {
+        folderName = newFolderName;
+        noteId = newNoteId;
+        if(twoPane) {
+            // Update Detail Fragment
+            DetailFragment detailFragment = (DetailFragment) getSupportFragmentManager()
+                    .findFragmentById(R.id.detail_fragment);
+            if (detailFragment != null) {
+                detailFragment.loadNote(newNoteId);
+                Log.v(TAG, "refreshDetailFragment _ID: " + newNoteId);
+            }
+        } else if (sourceCode == 1){
+            // Navigate to Detail View
+            Intent detailIntent = new Intent(this, DetailActivity.class);
+            detailIntent.putExtra("ID", newNoteId);
+            detailIntent.putExtra("Folder", newFolderName);
+            this.startActivity(detailIntent);
+        }
+
+    }
+
     // Save setup variables on rotation
     @Override
     protected void onSaveInstanceState(Bundle outState) {
         outState.putSerializable("state", state);
-        outState.putSerializable("layout", currentLayout);
+        outState.putSerializable("layout", currentMainLayout);
         outState.putString("folder", folderName);
+        outState.putString("noteId", noteId);
         super.onSaveInstanceState(outState);
     }
 
@@ -270,7 +340,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
-        if(currentLayout == Layout.TRASH) {
+        if(currentMainLayout == MainLayout.TRASH) {
             getMenuInflater().inflate(R.menu.menu_main_trash, menu);
         } else {
             getMenuInflater().inflate(R.menu.menu_main, menu);

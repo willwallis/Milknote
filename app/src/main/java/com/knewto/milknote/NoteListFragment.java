@@ -41,6 +41,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     private RecyclerView mRecyclerView;
     private LinearLayoutManager mLayoutManager;
     private Cursor emptyCursor;
+    private String existingNoteId;
 
     // Cursor Loader Variables
     private static final int LOADER_UNIQUE_ID = 0;
@@ -71,6 +72,12 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     static final int COL_FOLDER = 9;
     static final int COL_EDIT_FLAG = 10;
 
+    OnRecordsSelectedListener mCallback;
+
+    // Container Activity must implement this interface
+    public interface OnRecordsSelectedListener {
+        public void refreshDetailFragment(String newNoteId, String newFolderName, int sourceCode);
+    }
 
     /**
      * Mandatory empty constructor for the fragment manager to instantiate the
@@ -84,6 +91,11 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        if(savedInstanceState != null){
+            existingNoteId = savedInstanceState.getString("existingNoteId");
+        } else {
+            existingNoteId = "";
+        }
     }
 
     // 1. initiate loader. Variables: loader_id, arguments, LoaderManager.LoaderCallbacks implementation
@@ -142,12 +154,29 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
 
     @Override
     public void onAttach(Context context) {
+
         super.onAttach(context);
+
+        // This makes sure that the container activity has implemented
+        // the callback interface. If not, it throws an exception
+        try {
+            mCallback = (OnRecordsSelectedListener) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString()
+                    + " must implement OnHeadlineSelectedListener");
+        }
     }
+
 
     @Override
     public void onDetach() {
         super.onDetach();
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        outState.putString("existingNoteId", existingNoteId);
+        super.onSaveInstanceState(outState);
     }
 
     // 2. Create and load a new cursor with Note data
@@ -170,6 +199,19 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         // Swap the new cursor in.  (The framework will take care of closing the
         // old cursor once we return.)
         mAdapter.swapCursor(data);
+        if(data != null){
+            if (data.moveToFirst()) {
+                int indexId = data.getColumnIndex(NoteContract.NoteEntry._ID);
+                int indexFolder = data.getColumnIndex(NoteContract.NoteEntry.COLUMN_FOLDER);
+                String noteId = data.getString(indexId);
+                String folderName = data.getString(indexFolder);
+                if(!noteId.equals(existingNoteId)){
+                    mCallback.refreshDetailFragment(noteId, folderName, 0);
+                    existingNoteId = noteId;
+                }
+                Log.v(TAG, "onLoadFinished _ID: " + noteId);
+            }
+        }
     }
 
     // 4. Called when loader is no longer being used
