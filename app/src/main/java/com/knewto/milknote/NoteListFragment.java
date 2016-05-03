@@ -31,7 +31,7 @@ import com.knewto.milknote.data.NoteContract;
  * - loadFolder: Allows call from activity with new folder, reloads cursor
  */
 
-public class NoteListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor>{
+public class NoteListFragment extends Fragment implements LoaderManager.LoaderCallbacks<Cursor> {
     private static final String TAG = "NoteListFragment";
 
     private String currentFolder;
@@ -42,6 +42,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     private LinearLayoutManager mLayoutManager;
     private Cursor emptyCursor;
     private String existingNoteId;
+    private int cursorCount;
 
     // Cursor Loader Variables
     private static final int LOADER_UNIQUE_ID = 0;
@@ -91,10 +92,12 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if(savedInstanceState != null){
+        if (savedInstanceState != null) {
             existingNoteId = savedInstanceState.getString("existingNoteId");
+            cursorCount = savedInstanceState.getInt("cursorCount");
         } else {
             existingNoteId = "";
+            cursorCount = 0;
         }
     }
 
@@ -114,7 +117,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         // Get folder from bundle
         Bundle data = this.getArguments().getBundle("folder_data");
         currentFolder = data.getString("folder", getResources().getString(R.string.default_note_folder));
-        Log.v(TAG,"currentFolder is: " + currentFolder);
+        Log.v(TAG, "currentFolder is: " + currentFolder);
 
         mRecyclerView = (RecyclerView) view.findViewById(R.id.list);
         mRecyclerView.addItemDecoration(new SimpleDividerItemDecoration(getActivity()));
@@ -140,13 +143,14 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         //View emptyView = view.findViewById(R.id.notelist_fragment);
         int mChoiceMode = 0;
         // specify an adapter (see also next example)
-        mAdapter =  new NoteListRecyclerViewAdapter(getActivity(),
-                    new NoteListRecyclerViewAdapter.NoteAdapterOnClickHandler() {
-                        @Override
-                        public void onClick(Long date, NoteListRecyclerViewAdapter.NoteAdapterViewHolder vh) {}
-                    },
-                    emptyView,
-                    mChoiceMode);
+        mAdapter = new NoteListRecyclerViewAdapter(getActivity(),
+                new NoteListRecyclerViewAdapter.NoteAdapterOnClickHandler() {
+                    @Override
+                    public void onClick(Long date, NoteListRecyclerViewAdapter.NoteAdapterViewHolder vh) {
+                    }
+                },
+                emptyView,
+                mChoiceMode);
 
         mRecyclerView.setAdapter(mAdapter);
         return view;
@@ -163,7 +167,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
             mCallback = (OnRecordsSelectedListener) context;
         } catch (ClassCastException e) {
             throw new ClassCastException(context.toString()
-                    + " must implement OnHeadlineSelectedListener");
+                    + " must implement OnRecordsSelectedListener");
         }
     }
 
@@ -176,6 +180,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
     @Override
     public void onSaveInstanceState(Bundle outState) {
         outState.putString("existingNoteId", existingNoteId);
+        outState.putInt("cursorCount", cursorCount);
         super.onSaveInstanceState(outState);
     }
 
@@ -199,17 +204,22 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         // Swap the new cursor in.  (The framework will take care of closing the
         // old cursor once we return.)
         mAdapter.swapCursor(data);
-        if(data != null){
+        if (data != null) {
             if (data.moveToFirst()) {
                 int indexId = data.getColumnIndex(NoteContract.NoteEntry._ID);
                 int indexFolder = data.getColumnIndex(NoteContract.NoteEntry.COLUMN_FOLDER);
+                int newCursorCount = data.getCount();
                 String noteId = data.getString(indexId);
                 String folderName = data.getString(indexFolder);
-                if(!noteId.equals(existingNoteId)){
+                if (!noteId.equals(existingNoteId) || cursorCount > newCursorCount ) {
                     mCallback.refreshDetailFragment(noteId, folderName, 0);
                     existingNoteId = noteId;
+                    cursorCount = newCursorCount;
                 }
                 Log.v(TAG, "onLoadFinished _ID: " + noteId);
+            }else {
+                // If no records returned send a null
+                mCallback.refreshDetailFragment("", null, 0);
             }
         }
     }
@@ -223,7 +233,7 @@ public class NoteListFragment extends Fragment implements LoaderManager.LoaderCa
         mAdapter.swapCursor(null);
     }
 
-    public void loadFolder(String newFolder){
+    public void loadFolder(String newFolder) {
         // refresh the query
         currentFolder = newFolder;
         getLoaderManager().restartLoader(LOADER_UNIQUE_ID, null, this);

@@ -62,6 +62,7 @@
     <string name="empty_dialog_message">Are you sure you want to delete all records in trash permanently?</string>
     <string name="recorder_dialog_title">Recording note....</string>
     <string name="recorder_dialog_done">DONE</string>
+    <string name="no_record_selected">No record selected</string>
 
     <!-- Snackbar messages -->
     <string name="trash_notification">Moved to Trash</string>

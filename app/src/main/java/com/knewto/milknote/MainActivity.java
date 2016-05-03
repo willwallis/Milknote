@@ -62,7 +62,8 @@ import com.google.android.gms.ads.AdView;
  * - refreshFragment: reloads fragment when user picks main notes or trash in drawer
  */
 
-public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener, NoteListFragment.OnRecordsSelectedListener {
+public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener,
+        NoteListFragment.OnRecordsSelectedListener, DetailFragment.ParentActivityResponse {
 
     private static final String TAG = "MainActivity";
     private IntentFilter setStateFilter;
@@ -140,7 +141,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
         else {
             // Set new values
             folderName = getResources().getString(R.string.default_note_folder);
-            noteId = "o0";
+            noteId = "";
             state = State.IDLE;
             currentMainLayout = MainLayout.MAIN;
             // Check if navigated after trashing record, show snackbar
@@ -148,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
             if (intent != null && intent.hasExtra("trashFlag")) {
                 if (intent.getIntExtra("trashFlag", 0) == 1){
                     trashRecordId = intent.getStringExtra("recordId");
-                    trashNotify();
+                    trashNotify(trashRecordId);
                 }
             }
         }
@@ -297,7 +298,8 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
 
     // Refresh detail Fragment
     public void refreshDetailFragment(String newNoteId, String newFolderName, int sourceCode) {
-        folderName = newFolderName;
+        if (newFolderName != null){
+        folderName = newFolderName;}
         noteId = newNoteId;
         if(twoPane) {
             // Update Detail Fragment
@@ -406,14 +408,14 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     };
 
     // Displays snackbar and code for un-trash
-    private void trashNotify(){
+    public void trashNotify(final String trashNoteId){
         final CoordinatorLayout cView = (CoordinatorLayout) findViewById(R.id.coord_layout);
         final String restoredMessage = this.getResources().getString(R.string.trash_restored);
         Snackbar snackBar1 = Snackbar.make(cView, this.getResources().getString(R.string.trash_notification), Snackbar.LENGTH_LONG)
                 .setAction("UNDO", new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        if (restoreRecord(trashRecordId) > 0) {
+                        if (restoreRecord(trashNoteId) > 0) {
                             Snackbar snackbar2 = Snackbar.make(cView, restoredMessage, Snackbar.LENGTH_SHORT);
                             View snackView= snackbar2.getView();
                             TextView tv = (TextView) snackView.findViewById(android.support.design.R.id.snackbar_text);
@@ -433,6 +435,9 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
     private int restoreRecord(String noteID){
         String defaultFolder = this.getResources().getString(R.string.default_note_folder);
         int numberUpdate = DataUtility.changeFolder(getApplicationContext(), noteID, defaultFolder);
+        if (numberUpdate > 0){
+            refreshDetailFragment(noteID, defaultFolder, 1);
+        }
         return numberUpdate;
     }
 

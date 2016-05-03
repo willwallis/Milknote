@@ -3,7 +3,6 @@ package com.knewto.milknote;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.MenuItemCompat;
@@ -15,21 +14,18 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.ViewSwitcher;
 
 import com.knewto.milknote.data.NoteContract;
 
-
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@lin DetailFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link DetailFragment#newInstance} factory method to
- * create an instance of this fragment.
+ * Detail Fragment
+ * ----
  */
+
 public class DetailFragment extends Fragment {
 
     private static final String TAG = "DetailFragment";
@@ -42,72 +38,55 @@ public class DetailFragment extends Fragment {
     TextView vTimeText;
     TextView vLocationName;
 
-    // Fied values
+    // Field values
     String noteID;
-    String noteText = "";
+    String noteText;
     String noteEditText;
-    String dateText = "";
-    String timeText = "";
-    String dayText = "";
-    String locationName = "";
-    String folder = "";
+    String dateText;
+    String timeText;
+    String dayText;
+    String locationName;
+    String folder;
     String formattedTime;
     String formattedDate;
     String formattedLocation;
 
     // Layout variables
     private Layout currentLayout;
+    boolean viewSwitcher = false;
     public enum Layout {
+        EMPTY,
         READ,
         EDIT,
         RESTORE
     }
-    boolean viewSwitcher = false;
+
+    // Button Variables
     private ShareActionProvider mShareActionProvider;
+    ParentActivityResponse mCallback;
 
-
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-//    private OnFragmentInteractionListener mListener;
-
-    public DetailFragment() {
-        // Required empty public constructor
-        // Allow sending values from Activity
-        this.setArguments(new Bundle());
+    // Container Activity must implement this interface
+    public interface ParentActivityResponse {
+        public void trashNotify(String trashNoteId);
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment DetailFragment.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static DetailFragment newInstance(String param1, String param2) {
-        DetailFragment fragment = new DetailFragment();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
+    // Required empty public constructor
+    public DetailFragment() {
+        // Allow sending values from Activity
+        this.setArguments(new Bundle());
     }
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
+
+        // Initiate fields
+        formattedTime = "";
+        formattedDate = "";
+        formattedDate = "";
+        noteText = getString(R.string.no_record_selected);
+        folder = "Empty";
+        currentLayout = Layout.EMPTY;
 
         // Check whether we're recreating a previously destroyed instance
         if (savedInstanceState != null) {
@@ -115,8 +94,11 @@ public class DetailFragment extends Fragment {
             noteEditText = savedInstanceState.getString("noteEditText");
             currentLayout = (Layout)savedInstanceState.get("layout");
             noteID = savedInstanceState.getString("noteID");
+        } else {
+            // Get values from bundle
+            Bundle data = this.getArguments().getBundle("note_data");
+            noteID = data.getString("noteID", "");
         }
-        Log.v(TAG, "onCreate _ID: " + noteID);
 
         // Add Share Action Provider to Toolbar
         setHasOptionsMenu(true);
@@ -131,21 +113,8 @@ public class DetailFragment extends Fragment {
         // Maps Views
         mapViews(view);
 
-        // Get values from bundle
-        Bundle data = this.getArguments().getBundle("note_data");
-        if(noteID == null){
-            noteID = data.getString("noteID", "");}
-        if(currentLayout == null){
-            currentLayout = (Layout)data.get("layout");}
-        queryData();
-
-        // Set to edit mode if Layout is edit
-        if(currentLayout == Layout.EDIT){
-            viewSwitcher(1);
-        }
-
-        // Set Values
-        setViewText();
+        // Load and Set Values
+        loadNote(noteID);
 
         return view;
     }
@@ -153,8 +122,33 @@ public class DetailFragment extends Fragment {
     public void loadNote(String newNoteId){
         Log.v(TAG, "loadNote _ID: " + newNoteId);
         noteID = newNoteId;
-        queryData();
+        // if noteId is 0 length clear text values
+        if(noteID.length() > 0){
+            queryData();
+            if(currentLayout == Layout.EMPTY){
+                currentLayout = Layout.READ;
+            }
+        } else {
+            formattedTime = "";
+            formattedDate = "";
+            formattedDate = "";
+            noteText = getString(R.string.no_record_selected);
+            folder = "Empty";
+            currentLayout = Layout.EMPTY;
+        }
+        // Map new values to fields
         setViewText();
+        // Set layout based on whether record is in Trash
+        if(folder.equals(this.getResources().getString(R.string.trash_note_folder))){
+            currentLayout = Layout.RESTORE;
+        }
+
+        // Set to edit mode if Layout is edit
+        if(currentLayout == Layout.EDIT){
+            viewSwitcher(currentLayout);
+        }
+        // Reset menu based on layout
+        getActivity().invalidateOptionsMenu();
     }
 
     @Override
@@ -162,12 +156,18 @@ public class DetailFragment extends Fragment {
         // Inflate the menu; this adds items to the action bar if it is present.
         switch(currentLayout){
             case READ:
-                inflater.inflate(R.menu.menu_detail_share, menu);
+                inflater.inflate(R.menu.menu_detail_text, menu);
                 // Locate MenuItem with ShareActionProvider
                 MenuItem item = menu.findItem(R.id.menu_item_share);
                 // Fetch and store ShareActionProvider
                 mShareActionProvider = (ShareActionProvider) MenuItemCompat.getActionProvider(item);
                 setShareIntent(noteText);
+                break;
+            case EDIT:
+                inflater.inflate(R.menu.menu_detail_edit, menu);
+                break;
+            case RESTORE:
+                inflater.inflate(R.menu.menu_detail_restore, menu);
                 break;
         }
     }
@@ -185,22 +185,41 @@ public class DetailFragment extends Fragment {
         }
     }
 
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-//        if (mListener != null) {
-//            mListener.onFragmentInteraction(uri);
-//        }
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_trash:
+                trashRecord();
+                return true;
+            case R.id.action_save:
+                saveRecord();
+                return true;
+            case R.id.action_restore:
+                restoreRecord();
+                return true;
+            case R.id.action_edit:
+                editRecord();
+                return true;
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
     }
 
     @Override
     public void onAttach(Context context) {
         super.onAttach(context);
-//        if (context instanceof OnFragmentInteractionListener) {
-//            mListener = (OnFragmentInteractionListener) context;
-//        } else {
-//            throw new RuntimeException(context.toString()
-//                    + " must implement OnFragmentInteractionListener");
-//        }
+
+        // This makes sure that the container activity has implemented
+        // the callback interface. If not, it throws an exception
+        try {
+            mCallback = (ParentActivityResponse) context;
+        } catch (ClassCastException e) {
+            throw new ClassCastException(context.toString()
+                    + " must implement ParentActivityResponse");
+        }
     }
 
     @Override
@@ -277,14 +296,14 @@ public class DetailFragment extends Fragment {
     private void setViewText(){
         vNoteText.setText(noteText);
         vNoteEditText.setText(noteText);
-        vDayDate.setText(getString(R.string.label_date) +  " " + formattedDate);
-        vTimeText.setText(getString(R.string.label_time) +  " " + formattedTime);
+        vDayDate.setText(getString(R.string.label_date) + " " + formattedDate);
+        vTimeText.setText(getString(R.string.label_time) + " " + formattedTime);
         vLocationName.setText(getString(R.string.label_location) + " " + formattedLocation);
     }
 
     // View switcher - 0 is read, 1 is edit
-    public void viewSwitcher(int layoutFlag){
-        if(layoutFlag == 1){
+    public void viewSwitcher(Layout newLayout){
+        if(newLayout == Layout.EDIT){
             // switch next
             ViewSwitcher switcher = (ViewSwitcher) view.findViewById(R.id.my_switcher);
             switcher.setDisplayedChild(1); // viewswitcher swaps textview for edittextview
@@ -307,19 +326,40 @@ public class DetailFragment extends Fragment {
         }
     }
 
+    // METHODS FOR BUTTON
+    private void editRecord(){
+        currentLayout = Layout.EDIT; // Sets variable to indicate which actions to show
+        viewSwitcher(currentLayout);
+        getActivity().invalidateOptionsMenu(); // Reset menu to display correct buttons
+        InputMethodManager imm = (InputMethodManager) getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+        imm.toggleSoftInput(InputMethodManager.SHOW_IMPLICIT, 0); // Show keyboard
+    }
 
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p/>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-//    public interface OnFragmentInteractionListener {
-//        // TODO: Update argument type and name
-//        void onFragmentInteraction(Uri uri);
-//    }
+    private void saveRecord(){
+        currentLayout = Layout.READ;
+        viewSwitcher(currentLayout);
+        getActivity().invalidateOptionsMenu();
+        // Hide soft keyboard
+        View view = getActivity().getCurrentFocus();
+        if (view != null) {
+            InputMethodManager imm = (InputMethodManager)getActivity().getSystemService(Context.INPUT_METHOD_SERVICE);
+            imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
+        }
+    }
+
+    private void trashRecord(){
+        String trashFolder = this.getResources().getString(R.string.trash_note_folder);
+        int numberUpdate = DataUtility.changeFolder(getActivity(), noteID, trashFolder);
+        String recordUpdateYes = getString(R.string.records_trashed) + " " + numberUpdate;
+        // Navigate to Detail View & Show snack bar on detail view
+        mCallback.trashNotify(noteID);
+    }
+
+    private void restoreRecord(){
+        String defaultFolder = this.getResources().getString(R.string.default_note_folder);
+        int numberUpdate = DataUtility.changeFolder(getActivity(), noteID, defaultFolder);
+        String recordUpdateYes = getString(R.string.records_restored) + " " + numberUpdate;
+        currentLayout = Layout.READ;
+        getActivity().invalidateOptionsMenu();
+    }
 }

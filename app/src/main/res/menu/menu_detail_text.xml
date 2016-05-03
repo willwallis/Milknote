@@ -14,5 +14,12 @@
         android:title="@string/trash_button_labal"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/menu_item_share"
+        android:icon="@drawable/ic_share_white_48dp"
+        android:title="@string/share_button_label"
+        app:showAsAction="ifRoom"
+        app:actionProviderClass="android.support.v7.widget.ShareActionProvider"/>
+
 </menu>
 
