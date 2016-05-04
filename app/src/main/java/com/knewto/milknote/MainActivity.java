@@ -41,25 +41,29 @@ import com.google.android.gms.ads.AdView;
  * - delete empty trash icon when trash folder open
  *
  * Methods
- * - setState: processes state updates from transcribe service and displays/hides recording dialog
- * - callRecognition: sends signal to transcribe service to start/stop recording
- * - showRecordingDialog: shows the record dialog with indeterminant progress bar
- * - hideRecordDialog: hides the record dialog
- * - onDialogPositiveClick: callRecognition - stops the recording (actually a toggle)
- * - onDialogNegativeClick: required for interface, does nothing
- * - fabVisible: toggle FAB visibility with true/false input
- * - onStateUpdate (broadcast receiver): updated state from transcribe service
- * - trashNotify: displays snackbar with undo when record is trashed and navigated from detailActivity
- * - emptyTrashDialog: confirms user wants to empty trash and deletes records
- * - onSaveInstanceState: stores key state variables (state, layout, and recording flag)
- * - onResume: restarts Service in case it was destoyed while Activity was not active
+ *  - onCreate: checks width and assigns two pane, loads saved instance or bundle, inserts fragments, starts service
+ *  - displayName: Sets display label for folders
+ *  - refreshFragment: reloads fragment when user picks main notes or trash in drawer
+ *  - refreshDetailFragment: code to load new note in detail fragment
+ *  - onSaveInstanceState: stores key state variables (state, layout, folder and note id)
+ *  - onResume: restarts Service in case it was destoyed while Activity was not active
+ *  - onStateUpdate (broadcast receiver): updated state from transcribe service
+ *  - trashNotify: displays snackbar with undo when record is trashed and navigated from detailActivity
+ *  - restoreRecord: restores record if users selects undo in trashNotify
+ *  - emptyTrashDialog: confirms user wants to empty trash and deletes records
+ *  - callRecognition: sends signal to transcribe service to start/stop recording
+ *  - setState: processes state updates from transcribe service and displays/hides recording dialog
+ *  - showRecordingDialog: shows the record dialog with indeterminant progress bar
+ *  - hideRecordDialog: hides the record dialog
+ *  - onDialogPositiveClick: callRecognition - stops the recording (actually a toggle)
+ *  - onDialogNegativeClick: required for interface, does nothing
+ *  - fabVisible: toggle FAB visibility with true/false input
  *
  * Nav Drawer & Menu Methods
- * - onPrepareOptionsMenu: sets flag if drawer is open
- * - onCreateOptionsMenu: if trash displays delete icon else main menu
- * - onOptionsItemSelected: if click delete button do emptyTrashDialog
- * - DrawerItemClickListener: takes user to main notes, trash, or settings view
- * - refreshFragment: reloads fragment when user picks main notes or trash in drawer
+ *  - DrawerItemClickListener: takes user to main notes, trash, or settings view
+ *  - onPrepareOptionsMenu: sets flag if drawer is open
+ *  - onCreateOptionsMenu: if trash displays delete icon else main menu
+ *  - onOptionsItemSelected: if click delete button do emptyTrashDialog
  */
 
 public class MainActivity extends AppCompatActivity implements RecordDialogFragment.RecordDialogListener,
@@ -123,9 +127,8 @@ public class MainActivity extends AppCompatActivity implements RecordDialogFragm
             twoPane = false;
         }
 
-        ///// TO BE FIXED
+        // Default layout
         currentLayout = DetailFragment.Layout.READ;
-
 
         // Set layout template
         setContentView(R.layout.activity_main_material);

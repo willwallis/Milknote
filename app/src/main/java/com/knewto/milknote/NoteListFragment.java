@@ -19,14 +19,16 @@ import com.knewto.milknote.data.NoteContract;
 
 /**
  * A fragment representing a list of Transcriptions - uses folder to show main or trash
+ * - OnRecordsSelectedListener: calls refreshDetailFragment on parent for two pane view
  * - NoteListFragment: Enables sending the folder from Activity
- * - onCreate: super
+ * - onCreate: super, load savedinstance or initiate fields
  * - onActivityCreated: Initiates the cursor loader
  * - onCreateView: Gets folder from bundle and sets up recycler view
- * - onAttach: super
+ * - onAttach: super, check callback on activity
  * - onDetach: super
+ * - onSaveInstanceState: stores note Id and cursor length, only update second pane if these change.
  * - onCreateLoader: Crate cursor loader
- * - onFinishLoader: Called when loader if finished
+ * - onFinishLoader: Called when loader if finished, refreshes detail fragment (tablet view)
  * - onLoaderReset: Called when loader is no longer being users
  * - loadFolder: Allows call from activity with new folder, reloads cursor
  */

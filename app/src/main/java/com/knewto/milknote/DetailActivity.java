@@ -18,18 +18,11 @@ import com.knewto.milknote.DetailFragment.Layout;
 /**
  * Detail Activity
  * displays details of transcribed note and allows editing and trashing of note
- * - onCreate: load intent, map and set text view values, load ad, create fab, set layout based on folder
- * - onCreateOptionsMenu: READ - edit, trash, share, EDIT - save, RESTORE - trashed record restore
- * - createShareIntent: Creates share intent used by share action provider
- * - onOptionsItemSelected: trash, save, or restore record based on selection
- * - mapViews: set view variables equal to textviews, etc.
- * - loadIntent: set value variables equal to content of intent
- * - setViewText: set view variables equal to value variables
- * - editRecord: switch to edit text, hide fab, change menu, and show keyboard.
- * - saveRecord: set text and value variable, update database, show fab, change menu, and hide keyboard.
- * - trashRecord: Update record folder, navigate to main activity with trash flag and note id set.
- * - restoreRecord: Update folder, change layout view, update menu, and show fab
- * - fabVisible: Make Fab visible based on boolean input.
+ * - onCreate: load saved instance or intent, insert fragment, create toolbar, load ad
+ * - onCreateOptionsMenu: N/A - moved to fragment
+ * - onOptionsItemSelected: N/A - moved to fragment
+ * - onSaveInstanceState: store layout and noteid
+ * - trashNotify: implement for DetailFragment, send user to MainActivity with trash flag
  */
 
 public class DetailActivity extends AppCompatActivity implements DetailFragment.ParentActivityResponse {

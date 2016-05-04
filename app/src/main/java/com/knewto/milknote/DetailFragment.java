@@ -23,7 +23,25 @@ import com.knewto.milknote.data.NoteContract;
 
 /**
  * Detail Fragment
- * ----
+ * - ParentActivityResponse: define implement trashNotify method for parent activities
+ * - Detail Fragment: allows setting of arguments
+ * - onCreate: initiate fields, get values from saved instance or bundle, indicate has options menu
+ * - on CreateView: map fields, call loadNote
+ * - loadNote: querys data provider, else if null sets fields blank, call setViewText, restore layout
+ * - onCreateOptionsMenu: read, edit, and restore menu options
+ * - setShareIntent: sets note text for share provider
+ * - onOptionsItemSelected: trash, save, restore, or edit record.
+ * - onAttach: check parent activity implements callback
+ * - onDetach: not used
+ * - onSaveInstanceState: retain edit text on rotation, also layout, and current note id.
+ * - mapViews: map fields in layout
+ * - queryData: query data provider using note id as input
+ * - setViewText: maps values to field
+ * - viewSwitcher: switchs between read and edit modes
+ * - editRecord: switch to edit text, hide fab, change menu, and show keyboard.
+ * - saveRecord: set text and value variable, update database, show fab, change menu, and hide keyboard.
+ * - trashRecord: Update record folder, navigate to main activity with trash flag and note id set.
+ * - restoreRecord: Update folder, change layout view, update menu, and show fab
  */
 
 public class DetailFragment extends Fragment {
@@ -37,7 +55,6 @@ public class DetailFragment extends Fragment {
     TextView vDayDate;
     TextView vTimeText;
     TextView vLocationName;
-
     // Field values
     String noteID;
     String noteText;
@@ -50,7 +67,6 @@ public class DetailFragment extends Fragment {
     String formattedTime;
     String formattedDate;
     String formattedLocation;
-
     // Layout variables
     private Layout currentLayout;
     boolean viewSwitcher = false;
@@ -60,10 +76,10 @@ public class DetailFragment extends Fragment {
         EDIT,
         RESTORE
     }
-
     // Button Variables
     private ShareActionProvider mShareActionProvider;
     ParentActivityResponse mCallback;
+
 
     // Container Activity must implement this interface
     public interface ParentActivityResponse {
@@ -100,7 +116,7 @@ public class DetailFragment extends Fragment {
             noteID = data.getString("noteID", "");
         }
 
-        // Add Share Action Provider to Toolbar
+        // Add Menu Options from fragment
         setHasOptionsMenu(true);
     }
 
@@ -225,7 +241,6 @@ public class DetailFragment extends Fragment {
     @Override
     public void onDetach() {
         super.onDetach();
-//        mListener = null;
     }
 
     @Override
