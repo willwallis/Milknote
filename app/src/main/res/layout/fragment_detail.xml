@@ -26,20 +26,20 @@
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/detail_header_margin"
                     android:textColor="@color/primary_text"
                     android:id="@+id/timeText"
                     android:text="@string/label_time" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="4dp"
+                    android:layout_marginBottom="@dimen/detail_header_margin"
                     android:id="@+id/dayDateText"
                     android:text="@string/label_date" />
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginBottom="16dp"
+                    android:layout_marginBottom="@dimen/detail_header_bottom"
                     android:id="@+id/locationName"
                     android:text="@string/label_location" />
 
@@ -50,7 +50,7 @@
                 <ViewSwitcher
                     xmlns:android="http://schemas.android.com/apk/res/android"
                     android:id="@+id/my_switcher"
-                    android:layout_marginTop="8dp"
+                    android:layout_marginTop="@dimen/detail_text_top"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content" >
                     <TextView

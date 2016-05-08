@@ -11,9 +11,10 @@
         android:name="com.knewto.milknote.NoteListFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginLeft="16dp"
-        android:layout_marginStart="16dp"
-        android:layout_marginRight="16dp"
+        android:layout_marginLeft="@dimen/recycler_item_leftright"
+        android:layout_marginStart="@dimen/recycler_item_leftright"
+        android:layout_marginRight="@dimen/recycler_item_leftright"
+        android:layout_marginEnd="@dimen/recycler_item_leftright"
         app:layoutManager="LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
         tools:context="com.knewto.milknote.NoteListFragment"
@@ -23,6 +24,6 @@
         android:id="@+id/recyclerview_forecast_empty"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_margin="16dp"
+        android:layout_margin="@dimen/recycler_item_leftright"
         android:text="@string/no_records" />
 </RelativeLayout>
